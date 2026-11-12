@@ -42,6 +42,7 @@ __all__ = [
     "PrimarySteel",
     "SecondarySteel",
     "Steel",  # demandreductioncircularity
+    "ScrapSteel",  # demandreductioncircularity
     "Carbon",
     "DistrictHeat",
     "Naphtha",

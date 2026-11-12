@@ -52,7 +52,7 @@ from .oil_to_naphtha_conversion import OilToNaphthaConversion
 from .olefin_from_methanol import OlefinFromMethanol
 from .olefin_from_naphtha import OlefinFromNaphtha
 from .photovoltaics import Photovoltaics
-from .primary_steel_to_steel import PrimarySteelToSteel  # demandreductioncircular
+from .primary_steel_to_steel import PrimarySteelToSteel  # demandreductioncircularity
 from .pyrolysis import Pyrolysis
 from .refining import Refining
 from .run_of_river_hydro import RunOfRiverHydro

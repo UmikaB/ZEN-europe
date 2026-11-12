@@ -22,7 +22,8 @@ from zen_europe.datasets.datasets.carrier.aidres import Aidres
 
 from zen_europe.datasets.datasets.carrier.circularity_demand_reduction_scrap_steel_jrc import (
     CircularityDemandReductionScrapSteelJRC,
-) # demandreductioncircularity
+)
+# demandreductioncircularity
 from zen_europe.datasets.datasets.carrier.manual_steel_demand import (
     Eurofer,
     TradeEconomics,
@@ -31,7 +32,8 @@ from zen_europe.datasets.datasets.carrier.manual_steel_demand import (
 from zen_europe.datasets.datasets.carrier.material_economics import MaterialEconomics
 from zen_europe.datasets.datasets.technology.circularity_demand_reduction_EAF_cappel import (  # noqa: E501
     CircularityDemandReductionEAFCappel,
-) # demandreductioncircularity
+)
+# demandreductioncircularity
 
 
 
@@ -113,7 +115,7 @@ class SteelDemand(DatasetCollection):
         if element.name == "secondary_steel":
             rat_start = secondary_steel_share_beginning
             rat_end = secondary_steel_share_end / rat_start
-        elif element.name in ("steel", "scrap_steel"):
+        elif element.name == "steel":
             # demandreductioncircularity: total steel demand (AIDRES, Eurofer,
             # WorldSteel, TradeEconomics), constant over time and not split
             # into primary and secondary steel. The split follows from the
@@ -183,8 +185,9 @@ class SteelDemand(DatasetCollection):
         share = jrc_dataset.get_secondary_steel_share(years)
         scrap_input = cappel_dataset.get_scrap_steel_input()
 
-        # scrap per t steel demand = secondary steel share * scrap input
-        d, _ = self._calculate_steel_demand(element)
+        # scrap per t steel demand = secondary steel share * scrap input,
+        # applied to the total steel demand of the steel carrier
+        d, _ = self._calculate_steel_demand(element.model.carriers["steel"])
         d = d * share.iloc[0] * scrap_input
         d = d.rename(columns={"demand": "availability_import"})
 

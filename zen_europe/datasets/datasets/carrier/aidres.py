@@ -65,6 +65,7 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
             "clinker": cement_demand.to_frame(name="demand"),
             "primary_steel": steel_demand.to_frame(name="demand"),
             "secondary_steel": steel_demand.to_frame(name="demand"),
+            "steel": steel_demand.to_frame(name="demand"),  # demandreductioncircularity
             "methanol": methanol_demand.to_frame(name="demand"),
         }
         return data

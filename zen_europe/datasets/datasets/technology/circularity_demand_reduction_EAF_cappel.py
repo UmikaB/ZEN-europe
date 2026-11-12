@@ -15,15 +15,6 @@ class CircularityDemandReductionEAFCappel(Dataset[pd.Series]):
     Dataset class for the scrap steel input of the electric arc furnace (EAF).
 
     Cappel (2021) gives the metallic yield of the EAF. About 1.1 t of scrap is
-    needed per t of liquid steel, accounting for processing losses.
-    """
-
-
-class CircularityDemandReductionEAFCappel(Dataset[pd.Series]):
-    """
-    Dataset class for the scrap steel input of the electric arc furnace (EAF).
-
-    Cappel (2021) gives the metallic yield of the EAF. About 1.1 t of scrap is
     needed per t of liquid steel, accounting for processing losses. Used in the
     MSc thesis of U. Bhagole, Section 3.2.2, reference [78].
     """
