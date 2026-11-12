@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from zen_creator.model import Model
-
+from zen_creator import AssumptionInformation  # demandreductioncircularity
 from zen_creator.elements import Carrier
 from zen_creator.utils.attribute import Attribute
 
@@ -52,13 +52,26 @@ class PrimarySteel(Carrier):
         else:
             return self.price_shed_demand
 
+    # demandreductioncircularity: final demand moved to the carrier steel. primary and secundary steel have demand of 0.
+
     def _set_demand(self) -> Attribute:
         """
         Return the demand of primary steel.
+        The steel demand is placed on the steel carrier, so the primary steel
+        demand is 0. Primary steel reaches the steel demand via
+        primary_steel_to_steel.
 
         """
-        steel_demand = SteelDemand(source_path=self.model.source_path)
-        attr = steel_demand.get_steel_demand(element=self)
-        if self.settings.scenario.sensitivity_demand:
-            attr.add_scenarios(demand_sensitivity_scenarios(self.name))
+        # demandreductioncircularity: demand is 0, see steel carrier
+        attr = self.demand
+        attr.set_data(
+            default_value=0,
+            source=AssumptionInformation(
+                description=(
+                    "The total steel demand is placed on the steel carrier and "
+                    "met via primary_steel_to_steel, so primary steel has no demand of ""its own "
+                ),
+            ),
+        )
         return attr
+

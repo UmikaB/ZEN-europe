@@ -6,6 +6,9 @@ from zen_europe.datasets.dataset_collections.steel_demand import SteelDemand
 from zen_europe.datasets.datasets.technology.agora_industry_steel import (
     AgoraIndustrySteel,
 )
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_EAF_cappel import (  # noqa: E501
+    CircularityDemandReductionEAFCappel,  # demandreductioncircularity
+)
 from zen_europe.datasets.datasets.technology.steel_technologies_woertler import (
     SteelTechnologiesWoertler,
 )
@@ -41,7 +44,8 @@ class EAF(ConversionTechnology):
         """
         return Attribute(
             name="input_carrier",
-            default_value=["electricity", "hard_coal"],
+            # demandreductioncircularity: scrap_steel added as input
+            default_value=["electricity", "hard_coal", "scrap_steel"],
             element=self,
         )
 
@@ -69,7 +73,12 @@ class EAF(ConversionTechnology):
 
         """
         agora_dataset = AgoraIndustrySteel(source_path=self.source_path)
-        return agora_dataset.get_conversion_factor(self)
+        attr = agora_dataset.get_conversion_factor(self)
+        # demandreductioncircularity: add scrap steel input to the Agora inputs
+        cappel_dataset = CircularityDemandReductionEAFCappel(
+            source_path=self.source_path
+        )
+        return cappel_dataset.add_scrap_steel_to_conversion_factor(attr)
 
     def _set_opex_specific_variable(self) -> Attribute:
         """

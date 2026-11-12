@@ -22,8 +22,10 @@ from .oil import Oil
 from .olefin import Olefin
 from .passenger_mileage import PassengerMileage
 from .primary_steel import PrimarySteel
+from .scrap_steel import ScrapSteel  # demandreductioncircularity
 from .secondary_steel import SecondarySteel
 from .shipping import Shipping
+from .steel import Steel  # demandreductioncircularity
 from .truck_mileage import TruckMileage
 from .uranium import Uranium
 from .waste import Waste
@@ -39,6 +41,7 @@ __all__ = [
     "Hydrogen",
     "PrimarySteel",
     "SecondarySteel",
+    "Steel",  # demandreductioncircularity
     "Carbon",
     "DistrictHeat",
     "Naphtha",

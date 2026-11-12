@@ -52,9 +52,13 @@ from .oil_to_naphtha_conversion import OilToNaphthaConversion
 from .olefin_from_methanol import OlefinFromMethanol
 from .olefin_from_naphtha import OlefinFromNaphtha
 from .photovoltaics import Photovoltaics
+from .primary_steel_to_steel import PrimarySteelToSteel  # demandreductioncircular
 from .pyrolysis import Pyrolysis
 from .refining import Refining
 from .run_of_river_hydro import RunOfRiverHydro
+from .secondary_steel_to_steel import (
+ SecondarySteelToSteel,  # demandreductioncircularity
+)
 from .SMR import SMR
 from .waste_boiler_DH import WasteBoilerDH
 from .waste_plant import WastePlant
@@ -109,6 +113,8 @@ __all__ = [
     "H2_DRI",
     "NG_DRI",
     "EAF",
+    "PrimarySteelToSteel", # demandreductioncircularity
+    "SecondarySteelToSteel", # demandreductioncircularity
     "Pyrolysis",
     "DieselICEShip",
     "HydrogenFCShip",

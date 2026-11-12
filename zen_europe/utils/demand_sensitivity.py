@@ -17,8 +17,8 @@ DEMAND_SENSITIVITY_SECTORS: dict[str, list[str]] = {
     "electricity_heat": ["electricity", "heat"],
     "transport": ["passenger_mileage", "truck_mileage", "kerosene", "shipping"],
     "industry": [
-        "primary_steel",
-        "secondary_steel",
+        # demandreductioncircularity: the steel demand sits on the steel carrier
+        "steel",
         "clinker",
         "olefin",
         "ammonia",

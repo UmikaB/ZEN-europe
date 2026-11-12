@@ -19,12 +19,20 @@ from zen_creator import Attribute, ConversionTechnology, DatasetCollection
 from zen_creator.utils.attribute import SourceInformation
 
 from zen_europe.datasets.datasets.carrier.aidres import Aidres
+
+from zen_europe.datasets.datasets.carrier.circularity_demand_reduction_scrap_steel_jrc import (
+    CircularityDemandReductionScrapSteelJRC,
+) # demandreductioncircularity
 from zen_europe.datasets.datasets.carrier.manual_steel_demand import (
     Eurofer,
     TradeEconomics,
     WorldSteel,
 )
 from zen_europe.datasets.datasets.carrier.material_economics import MaterialEconomics
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_EAF_cappel import (  # noqa: E501
+    CircularityDemandReductionEAFCappel,
+) # demandreductioncircularity
+
 
 
 class SteelDemand(DatasetCollection):
@@ -47,6 +55,13 @@ class SteelDemand(DatasetCollection):
             "worldsteel": WorldSteel(self.source_path),
             "trade_economics": TradeEconomics(self.source_path),
             "material_economics": MaterialEconomics(self.source_path),
+            # demandreductioncircularity: sources for the scrap steel availability
+            "circularity_demand_reduction_scrap_steel_jrc": (
+                CircularityDemandReductionScrapSteelJRC(self.source_path)
+            ),
+            "circularity_demand_reduction_EAF_cappel": (
+                CircularityDemandReductionEAFCappel(self.source_path)
+            ),
         }
 
     def _calculate_steel_demand(
@@ -98,6 +113,14 @@ class SteelDemand(DatasetCollection):
         if element.name == "secondary_steel":
             rat_start = secondary_steel_share_beginning
             rat_end = secondary_steel_share_end / rat_start
+        elif element.name in ("steel", "scrap_steel"):
+            # demandreductioncircularity: total steel demand (AIDRES, Eurofer,
+            # WorldSteel, TradeEconomics), constant over time and not split
+            # into primary and secondary steel. The split follows from the
+            # scrap steel availability and the demand share of
+            # secondary_steel_to_steel (JRC 2021).
+            rat_start = 1
+            rat_end = 1
         else:
             rat_start = 1 - secondary_steel_share_beginning
             rat_end = (1 - secondary_steel_share_end) / rat_start
@@ -139,6 +162,52 @@ class SteelDemand(DatasetCollection):
             unit="tproduct/h",
         )
 
+    # demandreductioncircularity: scrap steel availability
+    def get_scrap_steel_availability(self, element: Carrier) -> Attribute:
+        """
+        Get the import availability of scrap steel.
+
+        The scrap availability per country and year is the secondary steel share
+        of the JRC trajectory times the scrap input of the EAF, applied to the
+        total steel demand. This allows exactly the JRC secondary steel share.
+        """
+        jrc_dataset = cast(
+            CircularityDemandReductionScrapSteelJRC,
+            self.data["circularity_demand_reduction_scrap_steel_jrc"],
+        )
+        cappel_dataset = cast(
+            CircularityDemandReductionEAFCappel,
+            self.data["circularity_demand_reduction_EAF_cappel"],
+        )
+        years = list(element.settings.time.years)
+        share = jrc_dataset.get_secondary_steel_share(years)
+        scrap_input = cappel_dataset.get_scrap_steel_input()
+
+        # scrap per t steel demand = secondary steel share * scrap input
+        d, _ = self._calculate_steel_demand(element)
+        d = d * share.iloc[0] * scrap_input
+        d = d.rename(columns={"demand": "availability_import"})
+
+        yearly_variation = share / share.iloc[0]
+        yearly_variation.name = "availability_import_yearly_variation"
+
+        source = SourceInformation(
+            description=(
+                "The scrap steel availability is the secondary steel share of "
+                f"the lower-bound JRC trajectory ({share.iloc[0]:.4f} in "
+                f"{years[0]}, {share.iloc[-1]:.4f} in {years[-1]}) times the "
+                f"EAF scrap input ({scrap_input} t/t, Cappel), applied to the "
+                "total steel demand (Aidres, Eurofer, WorldSteel, "
+                "TradeEconomics)."
+            ),
+            metadata=self.metadata,
+        )
+        return element.availability_import.set_data(
+            source=source,
+            df=d,
+            yearly_variations_df=yearly_variation,
+            unit="tproduct/h",
+        )
     def get_capacity_existing(self, element: ConversionTechnology) -> Attribute:
         """
         Get the existing capacity for steel production technologies.
