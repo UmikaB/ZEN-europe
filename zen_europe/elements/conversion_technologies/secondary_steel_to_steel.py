@@ -6,8 +6,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from zen_creator.model import Model
 
-from zen_creator import AssumptionInformation, Attribute, ConversionTechnology
+import pandas as pd
+from zen_creator import AssumptionInformation, Attribute, ConversionTechnology, Scenario
 
+from zen_europe.datasets.datasets.carrier.circularity_demand_reduction_scrap_steel_jrc import (  # noqa: E501
+    CircularityDemandReductionScrapSteelJRC,  # demandreductioncircularity
+)
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    INDUSTRIAL_CIRCULAR_PUSH,  # demandreductioncircularity
+)
 
 class SecondarySteelToSteel(ConversionTechnology):
     """Dummy technology that turns secondary steel into the final steel
@@ -78,5 +85,43 @@ class SecondarySteelToSteel(ConversionTechnology):
                     "steel."
                 ),
             ),
+        )
+        return attr
+   # demandreductioncircularity: secondary steel share (JRC), min = max
+    def _set_demand_share_min(self) -> Attribute:
+        """
+        Return the minimum share of the steel demand met by secondary steel.
+
+        Industrial circular push: no minimum share (thesis Table 3.6).
+        """
+        jrc_dataset = CircularityDemandReductionScrapSteelJRC(
+            source_path=self.model.source_path
+        )
+        attr = jrc_dataset.get_demand_share(self, self.demand_share_min)
+        attr.add_scenarios(
+            Scenario(
+                INDUSTRIAL_CIRCULAR_PUSH,
+                df=pd.Series(0.0, index=attr.df.index, name=attr.name),
+            )
+        )
+        return attr
+
+    # demandreductioncircularity: secondary steel share (JRC), min = max
+    def _set_demand_share_max(self) -> Attribute:
+        """
+        Return the maximum share of the steel demand met by secondary steel.
+
+        Industrial circular push: no maximum share (thesis Table 3.6); the split
+        is then limited by the scrap availability only.
+        """
+        jrc_dataset = CircularityDemandReductionScrapSteelJRC(
+            source_path=self.model.source_path
+        )
+        attr = jrc_dataset.get_demand_share(self, self.demand_share_max)
+        attr.add_scenarios(
+            Scenario(
+                INDUSTRIAL_CIRCULAR_PUSH,
+                df=pd.Series(float("inf"), index=attr.df.index, name=attr.name),
+            )
         )
         return attr

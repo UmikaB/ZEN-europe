@@ -6,10 +6,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from zen_creator.model import Model
 
+from zen_creator import Scenario
 from zen_creator.elements import Carrier
 from zen_creator.utils.attribute import Attribute
 
 from zen_europe.datasets.dataset_collections.steel_demand import SteelDemand
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    INDUSTRIAL_CIRCULAR_PUSH,  # demandreductioncircularity
+    SCRAP_STEEL_AVAILABILITY_FACTOR,  # demandreductioncircularity
+)
 
 
 class ScrapSteel(Carrier):
@@ -30,7 +35,12 @@ class ScrapSteel(Carrier):
 
         """
         steel_demand = SteelDemand(source_path=self.model.source_path)
-        return steel_demand.get_scrap_steel_availability(element=self)
+        attr = steel_demand.get_scrap_steel_availability(element=self)
+        # demandreductioncircularity: industrial circular push, upper-bound JRC scrap
+        attr.add_scenarios(
+            Scenario(INDUSTRIAL_CIRCULAR_PUSH, file_op=SCRAP_STEEL_AVAILABILITY_FACTOR)
+        )
+        return attr
 
     def _set_availability_export(self) -> Attribute:
         """
@@ -45,3 +55,4 @@ class ScrapSteel(Carrier):
         )
 
     # price_import and price_export keep the zen-creator default of 0 (free scrap).
+
