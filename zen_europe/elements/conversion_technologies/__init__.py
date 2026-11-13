@@ -7,7 +7,19 @@ from .biomass_boiler_DH import BiomassBoilerDH
 from .biomass_plant import BiomassPlant
 from .biomethane_conversion import BiomethaneConversion
 from .carbon_storage import CarbonStorage
+from .cement_fines_for_clinker import (
+    CementFinesForClinker,  # demandreductioncircularity
+)
 from .cement_kiln import CementKiln
+from .cement_recycling import CementRecycling  # demandreductioncircularity
+from .cement_to_concrete import CementToConcrete  # demandreductioncircularity
+from .clinker_to_cement import ClinkerToCement  # demandreductioncircularity
+from .concrete_demolishment_overproduction import (
+    ConcreteDemolishmentOverproduction,  # demandreductioncircularity
+)
+from .concrete_fine_collection import (
+    ConcreteFineCollection,  # demandreductioncircularity
+)
 from .DAC import DAC
 from .diesel_ICE_ship import DieselICEShip
 from .district_heating_grid import DistrictHeatingGrid
@@ -54,6 +66,9 @@ from .olefin_from_naphtha import OlefinFromNaphtha
 from .photovoltaics import Photovoltaics
 from .primary_steel_to_steel import PrimarySteelToSteel  # demandreductioncircularity
 from .pyrolysis import Pyrolysis
+from .raw_material_for_clinker import (
+    RawMaterialForClinker,  # demandreductioncircularity
+)
 from .refining import Refining
 from .run_of_river_hydro import RunOfRiverHydro
 from .secondary_steel_to_steel import (
@@ -109,6 +124,13 @@ __all__ = [
     "OlefinFromNaphtha",
     "HaberBosch",
     "CementKiln",
+    "ClinkerToCement",  # demandreductioncircularity
+    "CementToConcrete",  # demandreductioncircularity
+    "ConcreteDemolishmentOverproduction",  # demandreductioncircularity
+    "ConcreteFineCollection",  # demandreductioncircularity
+    "CementRecycling",  # demandreductioncircularity
+    "RawMaterialForClinker",  # demandreductioncircularity
+    "CementFinesForClinker",  # demandreductioncircularity
     "BF_BOF",
     "H2_DRI",
     "NG_DRI",

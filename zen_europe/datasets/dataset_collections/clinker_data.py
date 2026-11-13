@@ -29,6 +29,18 @@ from zen_europe.datasets.datasets.carrier.aidres import Aidres
 from zen_europe.datasets.datasets.carrier.british_geological_survey import (
     BritishGeologicalSurvey,
 )
+from zen_europe.datasets.datasets.carrier.circularity_demand_reduction_concrete_li import (
+    CircularityDemandReductionConcreteLi,  # demandreductioncircularity
+)
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_cement_recycling_moreno_juez import (  # noqa: E501
+    CircularityDemandReductionCementRecyclingMorenoJuez,  # demandreductioncircularity
+)
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_cement_recycling_van_ekenstein import (  # noqa: E501
+    CircularityDemandReductionCementRecyclingVanEkenstein,  # demandreductioncircularity
+)
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_cement_to_concrete_mpa import (  # noqa: E501
+    CircularityDemandReductionCementToConcreteMPA,  # demandreductioncircularity
+)
 from zen_europe.datasets.datasets.technology.ecra_technology_papers import (
     ECRATechnologyPapers,
 )
@@ -53,6 +65,19 @@ class ClinkerData(DatasetCollection):
             "british_geological_survey": BritishGeologicalSurvey(self.source_path),
             "material_economics": MaterialEconomics(self.source_path),
             "ecra_technology_papers": ECRATechnologyPapers(self.source_path),
+            # demandreductioncircularity: datasets of the concrete chain
+            "circularity_demand_reduction_concrete_li": (
+                CircularityDemandReductionConcreteLi(self.source_path)
+            ),
+            "circularity_demand_reduction_cement_to_concrete_mpa": (
+                CircularityDemandReductionCementToConcreteMPA(self.source_path)
+            ),
+            "circularity_demand_reduction_cement_recycling_van_ekenstein": (
+                CircularityDemandReductionCementRecyclingVanEkenstein(self.source_path)
+            ),
+            "circularity_demand_reduction_cement_recycling_moreno_juez": (
+                CircularityDemandReductionCementRecyclingMorenoJuez(self.source_path)
+            ),
         }
 
     def _calculate_clinker_demand(self, element: Carrier) -> pd.DataFrame:
@@ -145,6 +170,13 @@ class ClinkerData(DatasetCollection):
                     "unit": "GWh/tproduct",
                 }
             },
+            # demandreductioncircularity: raw material input of the kiln
+            {
+                "clinker_input_material": {
+                    "default_value": 1.0,
+                    "unit": "tproduct/tproduct",
+                }
+            },
         ]
         attr.set_data(
             default_value=cf,
@@ -235,6 +267,123 @@ class ClinkerData(DatasetCollection):
                     "The existing capacity for cement fuel technologies is mainly "
                     "derived from the Aidres dataset, which provides "
                     "data on existing capacities for various industrial sectors."
+                ),
+                metadata=self.metadata,
+            ),
+        )
+        return attr
+ # demandreductioncircularity: new method, final demand of concrete use
+    def get_concrete_demand(self, element: Carrier) -> Attribute:
+        """
+        Get the demand for concrete use.
+
+        The cement demand (Aidres, completed with the British Geological Survey)
+        is converted to concrete with about 7.27 t of concrete per t of cement
+        (2400 kg/m3 concrete density, 330 kg/m3 cement content).
+        """
+        aidres_dataset = cast(Aidres, self.data["aidres"])
+        li_dataset = cast(
+            CircularityDemandReductionConcreteLi,
+            self.data["circularity_demand_reduction_concrete_li"],
+        )
+        # _calculate_clinker_demand gives clinker, so divide by the clinker ratio
+        cement_demand = (
+            self._calculate_clinker_demand(element)
+            / aidres_dataset.get_CEM2_clinker_ratio()
+        )
+        concrete_per_cement = li_dataset.get_concrete_per_cement()
+        data = cement_demand * concrete_per_cement
+        source = SourceInformation(
+            description=(
+                "Concrete use demand is derived from the cement demand of the Aidres "
+                "dataset, completed with cement demand data from the British "
+                "Geological Survey for countries not covered in Aidres. All cement "
+                f"is assumed to be used in concrete, with {concrete_per_cement:.2f} "
+                "t of concrete per t of cement (concrete density of 2400 kg/m3, "
+                "Crista 2024; cement content of 330 kg/m3, Li 2003)."
+            ),
+            metadata=self.metadata,
+        )
+        return element.demand.set_data(
+            source=source,
+            df=data,
+            unit="tproduct/h",
+        )
+
+    # demandreductioncircularity: new method, cement_to_concrete
+    def get_conversion_factor_cement_to_concrete(
+        self, element: ConversionTechnology
+    ) -> Attribute:
+        """
+        Get the conversion factor of cement_to_concrete: the cement content of
+        concrete (Li 2003, Crista 2024) and the electricity use of ready-mixed
+        concrete production (MPA UK 2024).
+        """
+        attr = element.conversion_factor
+        li_dataset = cast(
+            CircularityDemandReductionConcreteLi,
+            self.data["circularity_demand_reduction_concrete_li"],
+        )
+        mpa_dataset = cast(
+            CircularityDemandReductionCementToConcreteMPA,
+            self.data["circularity_demand_reduction_cement_to_concrete_mpa"],
+        )
+        cement = li_dataset.get_cement_per_concrete()
+        electricity = mpa_dataset.get_electricity_per_concrete()
+        attr.set_data(
+            default_value=[
+                {"cement": {"default_value": cement, "unit": "tproduct/tproduct"}},
+                {"electricity": {"default_value": electricity, "unit": "GWh/tproduct"}},
+            ],
+            source=SourceInformation(
+                description=(
+                    f"Cement to concrete needs {cement:.4f} t of cement per t of "
+                    "concrete (cement content of 330 kg/m3, Li 2003; concrete density "
+                    f"of 2400 kg/m3, Crista 2024) and {electricity * 1000:.5f} MWh of "
+                    "electricity per t of concrete (MPA UK 2024, sector EPD for "
+                    "ready-mixed concrete)."
+                ),
+                metadata=self.metadata,
+            ),
+        )
+        return attr
+
+    # demandreductioncircularity: new method, cement_recycling
+    def get_conversion_factor_cement_recycling(
+        self, element: ConversionTechnology
+    ) -> Attribute:
+        """
+        Get the conversion factor of cement_recycling (recovery of unhydrated
+        cement from concrete waste): the concrete waste input (Van Ekenstein et
+        al. 2024) and the electricity use (Moreno-Juez et al. 2020).
+        """
+        attr = element.conversion_factor
+        van_ekenstein_dataset = cast(
+            CircularityDemandReductionCementRecyclingVanEkenstein,
+            self.data["circularity_demand_reduction_cement_recycling_van_ekenstein"],
+        )
+        moreno_juez_dataset = cast(
+            CircularityDemandReductionCementRecyclingMorenoJuez,
+            self.data["circularity_demand_reduction_cement_recycling_moreno_juez"],
+        )
+        waste = van_ekenstein_dataset.get_concrete_waste_per_cement()
+        electricity = moreno_juez_dataset.get_electricity_per_cement()
+        attr.set_data(
+            default_value=[
+                {
+                    "concrete_waste": {
+                        "default_value": waste,
+                        "unit": "tproduct/tproduct",
+                    }
+                },
+                {"electricity": {"default_value": electricity, "unit": "GWh/tproduct"}},
+            ],
+            source=SourceInformation(
+                description=(
+                    f"Recovering one ton of unhydrated cement needs {waste} t of "
+                    "concrete waste (Van Ekenstein et al. 2024) and "
+                    f"{electricity * 1000:.3f} MWh of electricity (Moreno-Juez et al. "
+                    "2020, heating-air classification)."
                 ),
                 metadata=self.metadata,
             ),

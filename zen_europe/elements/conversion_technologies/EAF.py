@@ -13,10 +13,15 @@ from zen_europe.datasets.datasets.technology.steel_technologies_woertler import 
     SteelTechnologiesWoertler,
 )
 
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    EAF_ELECTRICITY_FACTOR,  # demandreductioncircularity
+    EFFICIENCY_IMPROVEMENTS,  # demandreductioncircularity
+)
+
 if TYPE_CHECKING:
     from zen_creator.model import Model
 
-from zen_creator import AssumptionInformation, Attribute, ConversionTechnology
+from zen_creator import AssumptionInformation, Attribute, ConversionTechnology, Scenario
 
 
 class EAF(ConversionTechnology):
@@ -78,7 +83,29 @@ class EAF(ConversionTechnology):
         cappel_dataset = CircularityDemandReductionEAFCappel(
             source_path=self.source_path
         )
-        return cappel_dataset.add_scrap_steel_to_conversion_factor(attr)
+        attr = cappel_dataset.add_scrap_steel_to_conversion_factor(attr)
+        # demandreductioncircularity: efficiency improvements, -15% electricity
+        attr.add_scenarios(
+            Scenario(
+                EFFICIENCY_IMPROVEMENTS,
+                default_value=[
+                    {
+                        carrier: (
+                            {
+                                **value,
+                                "default_value": value["default_value"]
+                                                 * EAF_ELECTRICITY_FACTOR,
+                            }
+                            if carrier == "electricity"
+                            else value
+                        )
+                        for carrier, value in entry.items()
+                    }
+                    for entry in attr.default_value
+                ],
+            )
+        )
+        return attr
 
     def _set_opex_specific_variable(self) -> Attribute:
         """

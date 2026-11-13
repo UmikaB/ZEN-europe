@@ -41,6 +41,9 @@ class ECRATechnologyPapers(Dataset[pd.Series]):
         "hydrogen_to_cement_fuel": 4.5e6,
     }
 
+    # demandreductioncircularity: raw material (limestone, clay, shale) per t clinker
+    RAW_MATERIAL_PER_CLINKER = 1.55  # t raw material/t clinker
+
     def __init__(self, source_path: Path | str | None = None):
         super().__init__(source_path=source_path)
 
@@ -137,5 +140,39 @@ class ECRATechnologyPapers(Dataset[pd.Series]):
                 metadata=self.metadata,
             ),
             unit="Euro/GW",
+        )
+        return attr
+
+ # demandreductioncircularity: new method, raw_material_for_clinker
+    def get_conversion_factor_raw_material_for_clinker(
+        self, element: ConversionTechnology
+    ) -> Attribute:
+        """
+        Get the conversion factor of raw_material_for_clinker.
+
+        About 1.55 t of raw material (limestone, clay, shale) are needed per t of
+        clinker.
+        Returns:
+            Attribute: The conversion factor in t raw material per t clinker input
+                material.
+        """
+        attr = element.conversion_factor
+        attr.set_data(
+            default_value=[
+                {
+                    "raw_material_clinker": {
+                        "default_value": self.RAW_MATERIAL_PER_CLINKER,
+                        "unit": "tproduct/tproduct",
+                    }
+                }
+            ],
+            source=SourceInformation(
+                description=(
+                    f"About {self.RAW_MATERIAL_PER_CLINKER} t of raw material "
+                    "(limestone, clay, shale) are needed per t of clinker (ECRA "
+                    "(2022), Technology Papers 2022)."
+                ),
+                metadata=self.metadata,
+            ),
         )
         return attr

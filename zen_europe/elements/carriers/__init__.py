@@ -2,7 +2,13 @@ from .ammonia import Ammonia
 from .biomass import Biomass
 from .biomethane import Biomethane
 from .carbon import Carbon
+from .cement import Cement  # demandreductioncircularity
 from .clinker import Clinker
+from .clinker_input_material import ClinkerInputMaterial  # demandreductioncircularity
+from .concrete import Concrete  # demandreductioncircularity
+from .concrete_fine import ConcreteFine  # demandreductioncircularity
+from .concrete_use import ConcreteUse  # demandreductioncircularity
+from .concrete_waste import ConcreteWaste  # demandreductioncircularity
 from .crude_oil import CrudeOil
 from .diesel import Diesel
 from .district_heat import DistrictHeat
@@ -22,6 +28,7 @@ from .oil import Oil
 from .olefin import Olefin
 from .passenger_mileage import PassengerMileage
 from .primary_steel import PrimarySteel
+from .raw_material_clinker import RawMaterialClinker  # demandreductioncircularity
 from .scrap_steel import ScrapSteel  # demandreductioncircularity
 from .secondary_steel import SecondarySteel
 from .shipping import Shipping
@@ -37,6 +44,13 @@ __all__ = [
     "Electricity",
     "Ammonia",
     "Clinker",
+    "Cement",  # demandreductioncircularity
+    "Concrete",  # demandreductioncircularity
+    "ConcreteUse",  # demandreductioncircularity
+    "ConcreteWaste",  # demandreductioncircularity
+    "ConcreteFine",  # demandreductioncircularity
+    "RawMaterialClinker",  # demandreductioncircularity
+    "ClinkerInputMaterial",  # demandreductioncircularity
     "Biomethane",
     "Hydrogen",
     "PrimarySteel",

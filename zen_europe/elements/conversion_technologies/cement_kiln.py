@@ -7,11 +7,16 @@ from zen_europe.datasets.datasets.carrier.material_economics import MaterialEcon
 from zen_europe.datasets.datasets.technology.cement_production_gardarsdottir import (
     CementProductionGardarsdottir,
 )
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    CEMENT_KILN_ENERGY_FACTOR,  # demandreductioncircularity
+    EFFICIENCY_IMPROVEMENTS,  # demandreductioncircularity
+    scale_conversion_factor,  # demandreductioncircularity
+)
 
 if TYPE_CHECKING:
     from zen_creator.model import Model
 
-from zen_creator import Attribute, ConversionTechnology
+from zen_creator import Attribute, ConversionTechnology, Scenario
 
 
 class CementKiln(ConversionTechnology):
@@ -40,7 +45,8 @@ class CementKiln(ConversionTechnology):
         """
         return Attribute(
             name="input_carrier",
-            default_value=["fuel_for_cement", "electricity"],
+            # demandreductioncircularity: clinker_input_material added as input
+            default_value=["fuel_for_cement", "electricity", "clinker_input_material" ],
             element=self,
         )
 
@@ -77,7 +83,21 @@ class CementKiln(ConversionTechnology):
 
         """
         clinker_demand_dataset = ClinkerData(source_path=self.source_path)
-        return clinker_demand_dataset.get_conversion_factor_cement_kiln(self)
+        attr = clinker_demand_dataset.get_conversion_factor_cement_kiln(self)
+        # demandreductioncircularity: efficiency improvements, kiln energy -10%
+        attr.add_scenarios(
+            Scenario(
+                EFFICIENCY_IMPROVEMENTS,
+                default_value=scale_conversion_factor(
+                    attr.default_value,
+                    {
+                        "fuel_for_cement": CEMENT_KILN_ENERGY_FACTOR,
+                        "electricity": CEMENT_KILN_ENERGY_FACTOR,
+                    },
+                ),
+            )
+        )
+        return attr
 
     def _set_carbon_intensity_technology(self) -> Attribute:
         """

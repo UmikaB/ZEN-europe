@@ -8,8 +8,6 @@ from zen_creator import AssumptionInformation  # demandreductioncircularity
 from zen_creator.elements import Carrier
 from zen_creator.utils.attribute import Attribute
 
-from zen_europe.datasets.dataset_collections.steel_demand import SteelDemand
-from zen_europe.utils.demand_sensitivity import demand_sensitivity_scenarios
 
 
 class SecondarySteel(Carrier):

@@ -8,6 +8,13 @@ system:
   aggregated_time_steps_per_year: 50
   use_rolling_horizon: false
 
+# demandreductioncircularity: ZEN-garden plugin with the share constraints
+# (demand_share_min/max and input_share_min/max), from zen_garden_plugins
+plugins:
+  tech_share_limits:
+    include_demand_share: true
+    include_input_share: true
+
 # dataset-specific, type-checked settings (see zen_europe/settings/).
 # their defaults live in the category classes, so only overrides belong here.
 # a setting that controls a system value (e.g. region.set_nodes) is set here

@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pandas as pd
 from zen_creator.datasets.datasets.dataset import Dataset
+from zen_creator import Attribute, SourceInformation
 from zen_creator.datasets.datasets.metadata import MetaData
-
+from zen_creator.elements import ConversionTechnology
 
 class CircularityDemandReductionScrapSteelJRC(Dataset[pd.Series]):
     """
@@ -85,3 +86,42 @@ class CircularityDemandReductionScrapSteelJRC(Dataset[pd.Series]):
         )
         share.index.name = "year"
         return share.clip(0.0, 1.0)
+
+    def get_demand_share(
+            self, element: ConversionTechnology, attr: Attribute
+    ) -> Attribute:
+        """
+        Set a demand share (minimum or maximum) of secondary_steel_to_steel to the
+        secondary steel share of the JRC trajectory, for all countries.
+
+        Args:
+            element: The technology, secondary_steel_to_steel.
+            attr: The attribute to set, demand_share_min or demand_share_max.
+
+        Returns:
+            Attribute: The demand share per country and year.
+        """
+        years = list(element.settings.time.years)
+        nodes = list(element.model.config.system.set_nodes)
+        share = self.get_secondary_steel_share(years)
+        index = pd.MultiIndex.from_product([nodes, years], names=["node", "year"])
+        df = pd.Series(
+            share.reindex(index.get_level_values("year")).to_numpy(),
+            index=index,
+            name=attr.name,
+        )
+        attr.set_data(
+            df=df,
+            unit="1",
+            source=SourceInformation(
+                description=(
+                    "Share of the steel demand met by secondary (EAF-based) steel, "
+                    "lower-bound JRC trajectory, equal in all countries "
+                    f"({share.iloc[0]:.4f} in {years[0]}, {share.iloc[-1]:.4f} in "
+                    f"{years[-1]}). Minimum and maximum are equal, so the share is "
+                    "fixed in the reference."
+                ),
+                metadata=self.metadata,
+            ),
+        )
+        return attr

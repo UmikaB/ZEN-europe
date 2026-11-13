@@ -66,6 +66,8 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
             "primary_steel": steel_demand.to_frame(name="demand"),
             "secondary_steel": steel_demand.to_frame(name="demand"),
             "steel": steel_demand.to_frame(name="demand"),  # demandreductioncircularity
+            # demandreductioncircularity: concrete use is derived from cement demand
+            "concrete_use": cement_demand.to_frame(name="demand"),
             "methanol": methanol_demand.to_frame(name="demand"),
         }
         return data
@@ -103,6 +105,44 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
             A float representing the clinker to cement ratio.
         """
         return 0.7
+
+    # demandreductioncircularity: new method, clinker_to_cement
+    def get_conversion_factor_clinker_to_cement(
+        self, element: ConversionTechnology
+    ) -> Attribute:
+        """
+        Get the conversion factor of clinker_to_cement from the Aidres dataset.
+
+        CEM II cement contains 0.70 t of clinker per t of cement. There is no electricity
+        input: the AIDRES electricity use of 0.29 GJ per t of cement covers the
+        whole plant including cement grinding and is already in the cement kiln
+        (get_conversion_factor_cement_kiln in ClinkerData).
+
+        Returns:
+            Attribute: The conversion factor of clinker_to_cement.
+        """
+        attr = element.conversion_factor
+        clinker_ratio = self.get_CEM2_clinker_ratio()
+        attr.set_data(
+            default_value=[
+                {
+                    "clinker": {
+                        "default_value": clinker_ratio,
+                        "unit": "tproduct/tproduct",
+                    }
+                },
+            ],
+            source=SourceInformation(
+                description=(
+                    f"Clinker to cement needs {clinker_ratio} t of clinker per t of "
+                    "CEM II cement, based on the work of Aidres et al. (2023). The "
+                    "electricity use of the whole plant (0.29 GJ per t of cement) "
+                    "is in the cement kiln, so it is not counted here again."
+                ),
+                metadata=self.metadata,
+            ),
+        )
+        return attr
 
     def get_energy_density_methanol(self) -> float:
         """
