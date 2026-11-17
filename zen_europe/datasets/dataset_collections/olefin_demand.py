@@ -20,6 +20,12 @@ from zen_creator.utils.attribute import SourceInformation
 from zen_creator.utils.settings import Settings
 
 from zen_europe.datasets.datasets.carrier.aidres import Aidres
+from zen_europe.datasets.datasets.carrier.circularity_demand_reduction_plastic_use_oecd import (  # noqa: E501
+    CircularityDemandReductionPlasticUseOECD,  # demandreductioncircularity
+)
+from zen_europe.datasets.datasets.carrier.circularity_demand_reduction_plastic_use_world_population_review import (  # noqa: E501
+    CircularityDemandReductionPlasticUseWorldPopulationReview,
+)
 from zen_europe.datasets.datasets.carrier.eurostat import Eurostat
 from zen_europe.utils.constants import Constants
 
@@ -42,6 +48,15 @@ class OlefinDemand(DatasetCollection):
         return {
             "aidres": Aidres(self.source_path),
             "eurostat": Eurostat(source_path=self.source_path, settings=self.settings),
+            # demandreductioncircularity: datasets of the plastics chain
+            "circularity_demand_reduction_plastic_use_world_population_review": (
+                CircularityDemandReductionPlasticUseWorldPopulationReview(
+                    self.source_path
+                )
+            ),
+            "circularity_demand_reduction_plastic_use_oecd": (
+                CircularityDemandReductionPlasticUseOECD(self.source_path)
+            ),
         }
 
     def get_olefin_demand(self, element: Carrier) -> Attribute:
@@ -53,6 +68,30 @@ class OlefinDemand(DatasetCollection):
         since naphtha is a key feedstock for olefin production.
         The function retrieves the naphtha demand data
          and processes it to obtain the olefin demand.
+        """
+        # demandreductioncircularity: calculation moved to _calculate_olefin_demand
+        d = self._calculate_olefin_demand(element)
+
+        source = SourceInformation(
+            description=(
+                "Olefin demand derived from naphtha demand from Eurostat, "
+                "with conversion factors from the Aidres dataset."
+                "The naphtha demand is used as a proxy for olefin demand, "
+                "since naphtha is a key feedstock for olefin production."
+            ),
+            metadata=self.metadata,
+        )
+        return element.demand.set_data(
+            source=source,
+            df=d,
+            unit="tproduct/h",
+        )
+
+        # demandreductioncircularity: calculation of get_olefin_demand, unchanged
+
+    def _calculate_olefin_demand(self, element: Carrier) -> pd.Series:
+        """
+        Calculate the olefin demand in t/h from the Eurostat naphtha demand.
         """
         aidres_dataset = cast(Aidres, self.data["aidres"])
         eurostat_dataset = cast(Eurostat, self.data["eurostat"])
@@ -79,22 +118,99 @@ class OlefinDemand(DatasetCollection):
 
         d.index.name = "node"
         d.name = "demand"
+        return d
 
+        # demandreductioncircularity: new method, final demand of plastic use
+
+    def get_plastic_use_demand(self, element: Carrier) -> Attribute:
+        """
+        Get the final demand for plastic use.
+
+        Plastic consumption per country (World Population Review), doubling by
+        2060 (OECD Global Plastics Outlook).
+        """
+        wpr_dataset = cast(
+            CircularityDemandReductionPlasticUseWorldPopulationReview,
+            self.data[
+                "circularity_demand_reduction_plastic_use_world_population_review"
+            ],
+        )
+        oecd_dataset = cast(
+            CircularityDemandReductionPlasticUseOECD,
+            self.data["circularity_demand_reduction_plastic_use_oecd"],
+        )
+        nodes = list(element.model.config.system.set_nodes)
+        years = list(element.settings.time.years)
+        d = wpr_dataset.get_plastic_consumption(nodes)
+        yearly_variation = oecd_dataset.get_yearly_variation(years, years[0])
         source = SourceInformation(
             description=(
-                "Olefin demand derived from naphtha demand from Eurostat, "
-                "with conversion factors from the Aidres dataset."
-                "The naphtha demand is used as a proxy for olefin demand, "
-                "since naphtha is a key feedstock for olefin production."
+                "Plastic use demand is the yearly plastic consumption per country "
+                "(World Population Review 2025), growing geometrically so that it "
+                "doubles by 2060 (OECD Global Plastics Outlook 2022)."
             ),
             metadata=self.metadata,
         )
         return element.demand.set_data(
             source=source,
             df=d,
+            yearly_variations_df=yearly_variation,
             unit="tproduct/h",
         )
 
+        # demandreductioncircularity: new method, final demand of non-plastic olefins
+
+    def get_non_plastic_olefin_demand(self, element: Carrier) -> Attribute:
+        """
+        Get the final demand for non-plastic olefins.
+
+        The olefin demand (Eurostat naphtha demand and Aidres) minus the plastic
+        demand, per country and year, never below 0. Because plastic demand
+        grows and olefin demand stays constant, the yearly variation differs
+        per country.
+        """
+        wpr_dataset = cast(
+            CircularityDemandReductionPlasticUseWorldPopulationReview,
+            self.data[
+                "circularity_demand_reduction_plastic_use_world_population_review"
+            ],
+        )
+        oecd_dataset = cast(
+            CircularityDemandReductionPlasticUseOECD,
+            self.data["circularity_demand_reduction_plastic_use_oecd"],
+        )
+        nodes = list(element.model.config.system.set_nodes)
+        years = list(element.settings.time.years)
+        olefin = self._calculate_olefin_demand(element).reindex(nodes).fillna(0.0)
+        plastic = wpr_dataset.get_plastic_consumption(nodes)
+        growth = oecd_dataset.get_yearly_variation(years, years[0])
+
+        d = (olefin - plastic).clip(lower=0)
+        d.name = "demand"
+        rows = {}
+        for year in years:
+            d_year = (olefin - plastic * growth[year]).clip(lower=0)
+            rows[year] = (d_year / d.replace(0, float("nan"))).fillna(0.0)
+        yearly_variation = pd.DataFrame(rows).stack()
+        yearly_variation.index.names = ["node", "year"]
+        yearly_variation.name = "demand_yearly_variation"
+
+        source = SourceInformation(
+            description=(
+                "Non-plastic olefin demand is the olefin demand (naphtha demand "
+                "from Eurostat with Aidres conversion factors) minus the plastic "
+                "use demand (World Population Review, doubling by 2060 following "
+                "the OECD), per country and year and never below 0. Around 60% of "
+                "olefins are used for plastics (FGE Nexant 2024)."
+            ),
+            metadata=self.metadata,
+        )
+        return element.demand.set_data(
+            source=source,
+            df=d,
+            yearly_variations_df=yearly_variation,
+            unit="tproduct/h",
+        )
     def get_capacity_existing_olefin(self, element: ConversionTechnology) -> Attribute:
         """
         Get the existing olefin production capacity.

@@ -13,6 +13,9 @@ from .cement_fines_for_clinker import (
 from .cement_kiln import CementKiln
 from .cement_recycling import CementRecycling  # demandreductioncircularity
 from .cement_to_concrete import CementToConcrete  # demandreductioncircularity
+from .chemical_recycling_plastic import (
+    ChemicalRecyclingPlastic,  # demandreductioncircularity
+)
 from .clinker_to_cement import ClinkerToCement  # demandreductioncircularity
 from .concrete_demolishment_overproduction import (
     ConcreteDemolishmentOverproduction,  # demandreductioncircularity
@@ -42,8 +45,12 @@ from .heat_pump_DH import HeatPumpDH
 from .hydrogen_FC_ship import HydrogenFCShip
 from .ICE_diesel import ICE_diesel
 from .ICE_petrol import ICE_petrol
+from .incineration_plastic import IncinerationPlastic  # demandreductioncircularity
 from .lignite_coal_plant import LigniteCoalPlant
 from .lng_terminal import LNGTerminal
+from .mechanical_recycling_plastic import (
+    MechanicalRecyclingPlastic,  # demandreductioncircularity
+)
 from .methanation import Methanation
 from .methanol_from_biomass import MethanolFromBiomass
 from .methanol_from_hydrogen import MethanolFromHydrogen
@@ -63,7 +70,14 @@ from .oil_to_kerosene_conversion import OilToKeroseneConversion
 from .oil_to_naphtha_conversion import OilToNaphthaConversion
 from .olefin_from_methanol import OlefinFromMethanol
 from .olefin_from_naphtha import OlefinFromNaphtha
+from .olefins_to_nonplastics import (
+    OlefinsToNonplastics,  # demandreductioncircularity
+)
+from .overproduction_use_plastic import (
+    OverproductionUsePlastic,  # demandreductioncircularity
+)
 from .photovoltaics import Photovoltaics
+from .polymerisation import Polymerisation  # demandreductioncircularity
 from .primary_steel_to_steel import PrimarySteelToSteel  # demandreductioncircularity
 from .pyrolysis import Pyrolysis
 from .raw_material_for_clinker import (
@@ -122,6 +136,12 @@ __all__ = [
     "MethanolFromHydrogen",
     "OlefinFromMethanol",
     "OlefinFromNaphtha",
+    "Polymerisation",  # demandreductioncircularity
+    "OverproductionUsePlastic",  # demandreductioncircularity
+    "MechanicalRecyclingPlastic",  # demandreductioncircularity
+    "ChemicalRecyclingPlastic",  # demandreductioncircularity
+    "IncinerationPlastic",  # demandreductioncircularity
+    "OlefinsToNonplastics",  # demandreductioncircularity
     "HaberBosch",
     "CementKiln",
     "ClinkerToCement",  # demandreductioncircularity

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from zen_europe.datasets.dataset_collections.olefin_demand import OlefinDemand
-from zen_europe.utils.demand_sensitivity import demand_sensitivity_scenarios
+#from zen_europe.datasets.dataset_collections.olefin_demand import OlefinDemand
+#from zen_europe.utils.demand_sensitivity import demand_sensitivity_scenarios
+from zen_creator import AssumptionInformation  # demandreductioncircularity
 
 if TYPE_CHECKING:
     from zen_creator.model import Model
@@ -52,15 +53,23 @@ class Olefin(Carrier):
         else:
             return self.price_shed_demand
 
+    # demandreductioncircularity: demand moved to plastic_use and non_plastic_olefin
     def _set_demand(self) -> Attribute:
         """
         Return the demand of olefin.
 
-        """
-        olefin_demand = OlefinDemand(
-            source_path=self.model.source_path, settings=self.settings
+        The final demand is placed on the plastic_use and non_plastic_olefins
+         carriers, so the olefin demand is 0.
+     """
+        attr = self.demand
+        attr.set_data(
+            default_value=0,
+            source=AssumptionInformation(
+                description=(
+                    "The final olefin demand is split into plastic use and "
+                    "non-plastic olefins, so olefin has no demand of its own  "
+                ),
+            ),
         )
-        attr = olefin_demand.get_olefin_demand(element=self)
-        if self.settings.scenario.sensitivity_demand:
-            attr.add_scenarios(demand_sensitivity_scenarios(self.name))
         return attr
+

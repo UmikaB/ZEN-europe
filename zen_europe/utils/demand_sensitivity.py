@@ -21,7 +21,11 @@ DEMAND_SENSITIVITY_SECTORS: dict[str, list[str]] = {
         "steel",
         # demandreductioncircularity: the cement demand sits on concrete_use (instead of clinker)
         "concrete_use",
-        "olefin",
+        # demandreductioncircularity: the olefin demand sits on plastic_use and
+        # non_plastic_olefins (instead of olefin)
+        "plastic_use",
+        "non_plastic_olefins",
+        #"olefin",
         "ammonia",
         "methanol",
     ],

@@ -235,7 +235,79 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
             ),
         )
         return attr
+        # demandreductioncircularity: new method, polymerisation
 
+    def get_conversion_factor_polymerisation(
+            self, element: ConversionTechnology
+    ) -> Attribute:
+        """
+        Get the conversion factor of polymerisation (olefin to plastic).
+
+        Electricity and heat follow the Aidres reference route for polyethylene
+        (Table 34, (NG) PE-REF: 0.49 GJ electricity and 0.29 GJ natural gas per t
+        of polyethylene); the natural gas is modelled as heat. One ton of olefin
+        per ton of plastic is an assumption.
+
+        Returns:
+            Attribute: The conversion factor of polymerisation.
+        """
+        electricity = 0.49 / (Constants.GJ_PER_MWH * 1000)  # GWh/t, Table 34
+        heat = 0.29 / (Constants.GJ_PER_MWH * 1000)  # GWh/t, Table 34 (natural gas)
+        attr = element.conversion_factor
+        attr.set_data(
+            default_value=[
+                {"olefin": {"default_value": 1.0, "unit": "tproduct/tproduct"}},
+                {"electricity": {"default_value": electricity, "unit": "GWh/tproduct"}},
+                {"heat": {"default_value": heat, "unit": "GWh/tproduct"}},
+            ],
+            source=SourceInformation(
+                description=(
+                    "Polymerisation needs 0.49 GJ of electricity and 0.29 GJ of "
+                    "natural gas (modelled as heat) per t of plastic, from the "
+                    "Aidres reference route for polyethylene (Table 34, PE-REF), "
+                    "and one t of olefin per t of plastic  "
+                ),
+                metadata=self.metadata,
+            ),
+        )
+        return attr
+
+        # demandreductioncircularity: new method, polymerisation
+
+    def get_capex_specific_polymerisation(
+            self, element: ConversionTechnology
+    ) -> Attribute:
+        """
+        Get the specific capex of polymerisation from the Aidres dataset.
+
+        Polyethylene plant of 118.44 MEuro for 34,247 kg/h (Table 30, money year
+        2007), inflated to the price year with the ECB inflation rate.
+
+        Returns:
+            Attribute: The specific capex in Euro/(t plastic/h).
+        """
+        capex_total = 118.44 * 1e6  # Euro, Table 30, polyethylene
+        capacity = 34247  # kg/h, Table 30
+        money_year = 2007
+        capex_specific_value = capex_total / capacity * 1000  # Euro/(t/h)
+        inflation = ECBInflation(source_path=self.source_path).get_inflation_rate(
+            base_year=money_year,
+            target_year=element.settings.cost.price_year,
+        )
+        attr = element.capex_specific_conversion
+        attr.set_data(
+            default_value=capex_specific_value * inflation,
+            unit="Euro/(tproduct/h)",
+            source=SourceInformation(
+                description=(
+                    "The specific capex of polymerisation is the Aidres "
+                    "polyethylene plant (118.44 MEuro for 34,247 kg/h, money year "
+                    "2007), inflated to the price year (Aidres et al. 2023)."
+                ),
+                metadata=self.metadata,
+            ),
+        )
+        return attr
     def get_conversion_factor_cement_fuel(
         self, element: ConversionTechnology
     ) -> Attribute:

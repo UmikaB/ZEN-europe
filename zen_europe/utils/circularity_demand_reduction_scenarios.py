@@ -1,7 +1,7 @@
 # demandreductioncircularity: new file, scenarios of the MSc thesis of U. Bhagole
 """Scenarios for demand reduction and circularity strategies.
 
-The five scenarios of the MSc thesis of U. Bhagole (Section 3.3, Table 3.6).
+The five scenarios of the MSc thesis of U. Bhagole.
 Each scenario is applied on top of the reference by changing a few
 attributes.
 
@@ -36,6 +36,18 @@ DEMAND_FACTORS: dict[str, dict[str, float]] = {
         # reduced cement and concrete output: -16% (ING 2023 [146], ZKG 2023 [147])
         CRISIS: 0.84,
     },
+    # demandreductioncircularity: plastics chain
+    "plastic_use": {
+        # design for function, less overuse and overspecification in packaging:
+        # -5% (Material Economics 2019 [110])
+        INDUSTRIAL_CIRCULAR_PUSH: 0.95,
+        # less packaging, reuse and sharing: -15% (Material Economics 2019 [110],
+        # JRC 2022 [139])
+        CONSUMER_DEMAND_REDUCTION: 0.85,
+        # reduced plastic output: -8% (Financial Times 2024 [148]); in the thesis
+        # table but not in the thesis runs, added here (see the Excel overview)
+        CRISIS: 0.92,
+    },
 }
 
 # industrial circular push: scrap steel availability from the upper-bound JRC
@@ -55,7 +67,10 @@ CEMENT_KILN_ENERGY_FACTOR = 0.90
 CLINKER_TO_CEMENT_CLINKER_FACTOR = 0.50 / 0.70
 # raw meal preparation -15%: raw material of raw_material_for_clinker
 RAW_MATERIAL_FOR_CLINKER_FACTOR = 0.85
-
+# demandreductioncircularity: efficiency improvements in polymerisation, process
+# efficiency +15% (Material Economics 2019 ): electricity and heat of
+# polymerisation x0.85. Olefin stays 1 t/t to keep the mass balance
+POLYMERISATION_ENERGY_FACTOR = 0.85
 
 def demand_reduction_scenarios(carrier_name: str) -> list[Scenario]:
     """Return the demand scenarios of a carrier, applied as a factor on the demand.
@@ -97,3 +112,30 @@ def scale_conversion_factor(
         }
         for entry in conversion_factor
     ]
+
+# demandreductioncircularity: helper for the input share constraints
+def input_share_series(element, carrier: str, value: float):
+    """Return an input share as a Series over carrier, node and year.
+
+    The tech_share_limits plugin reads input_share_min/max per input carrier,
+    so the share only applies to the named carrier (not to e.g. electricity).
+
+    Args:
+        element: The conversion technology.
+        carrier: The input carrier the share applies to, e.g. 'plastic_waste'.
+        value: The share (0-1).
+
+    Returns:
+        pd.Series: The share, indexed by carrier, node and year.
+    """
+    import pandas as pd
+
+    index = pd.MultiIndex.from_product(
+        [
+            [carrier],
+            list(element.model.config.system.set_nodes),
+            list(element.settings.time.years),
+        ],
+        names=["carrier", "node", "year"],
+    )
+    return pd.Series(value, index=index)

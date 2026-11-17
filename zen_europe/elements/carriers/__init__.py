@@ -24,9 +24,13 @@ from .lng import LNG
 from .methanol import Methanol
 from .naphtha import Naphtha
 from .natural_gas import NaturalGas
+from .non_plastic_olefins import NonPlasticOlefins  # demandreductioncircularity
 from .oil import Oil
 from .olefin import Olefin
 from .passenger_mileage import PassengerMileage
+from .plastic import Plastic  # demandreductioncircularity
+from .plastic_use import PlasticUse  # demandreductioncircularity
+from .plastic_waste import PlasticWaste  # demandreductioncircularity
 from .primary_steel import PrimarySteel
 from .raw_material_clinker import RawMaterialClinker  # demandreductioncircularity
 from .scrap_steel import ScrapSteel  # demandreductioncircularity
@@ -68,6 +72,10 @@ __all__ = [
     "Diesel",
     "Gasoline",
     "Olefin",
+    "Plastic",  # demandreductioncircularity
+    "PlasticUse",  # demandreductioncircularity
+    "PlasticWaste",  # demandreductioncircularity
+    "NonPlasticOlefins",  # demandreductioncircularity
     "Kerosene",
     "Shipping",
     "LNG",
