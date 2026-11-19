@@ -114,20 +114,22 @@ def scale_conversion_factor(
     ]
 
 # demandreductioncircularity: helper for the input share constraints
-def input_share_series(element, carrier: str, value: float):
+def input_share_series(element, carrier: str, value: float, name: str):
     """Return an input share as a Series over carrier, node and year.
 
-    The tech_share_limits plugin reads input_share_min/max per input carrier,
-    so the share only applies to the named carrier (not to e.g. electricity).
+       The tech_share_limits plugin reads input_share_min/max per input carrier,
+       so the share only applies to the named carrier (not to e.g. electricity).
 
-    Args:
-        element: The conversion technology.
-        carrier: The input carrier the share applies to, e.g. 'plastic_waste'.
-        value: The share (0-1).
+       Args:
+           element: The conversion technology.
+           carrier: The input carrier the share applies to, e.g. 'plastic_waste'.
+           value: The share (0-1).
+           name: The attribute name, used as the value column of the csv
+               (e.g. 'input_share_min').
 
-    Returns:
-        pd.Series: The share, indexed by carrier, node and year.
-    """
+       Returns:
+           pd.Series: The share, indexed by carrier, node and year.
+       """
     import pandas as pd
 
     index = pd.MultiIndex.from_product(
@@ -138,4 +140,4 @@ def input_share_series(element, carrier: str, value: float):
         ],
         names=["carrier", "node", "year"],
     )
-    return pd.Series(value, index=index)
+    return pd.Series(value, index=index, name=name)

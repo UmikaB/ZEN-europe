@@ -132,7 +132,7 @@ class MechanicalRecyclingPlastic(ConversionTechnology):
         share_s2 = improved.get_recycling_share(self.name)
         attr = self.input_share_min
         attr.set_data(
-            df=input_share_series(self, "plastic_waste", share),
+            df=input_share_series(self, "plastic_waste", share, "input_share_min"),
             unit="1",
             source=SourceInformation(
                 description=(
@@ -145,7 +145,9 @@ class MechanicalRecyclingPlastic(ConversionTechnology):
         attr.add_scenarios(
             Scenario(
                 INDUSTRIAL_CIRCULAR_PUSH,
-                df=input_share_series(self, "plastic_waste", share_s2),
+                df=input_share_series(
+                    self, "plastic_waste", share_s2, "input_share_min"
+                ),
             )
         )
         attr.add_source(
@@ -173,7 +175,7 @@ class MechanicalRecyclingPlastic(ConversionTechnology):
         share = today.get_recycling_share(self.name)
         attr = self.input_share_max
         attr.set_data(
-            df=input_share_series(self, "plastic_waste", share),
+            df=input_share_series(self, "plastic_waste", share, "input_share_max"),
             unit="1",
             source=SourceInformation(
                 description=(
@@ -186,15 +188,15 @@ class MechanicalRecyclingPlastic(ConversionTechnology):
         attr.add_scenarios(
             Scenario(
                 INDUSTRIAL_CIRCULAR_PUSH,
-                df=input_share_series(self, "plastic_waste", 1.0),
+                df=input_share_series(self, "plastic_waste", 1.0, "input_share_max"),
             )
         )
         attr.add_source(
             AssumptionInformation(
                 description=(
-                    "Industrial circular push: no upper limit on mechanical "
-                    "recycling"
+                    "Industrial circular push: no upper limit on mechanical recycling"
                 ),
             )
         )
         return attr
+
