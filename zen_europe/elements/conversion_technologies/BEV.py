@@ -8,6 +8,9 @@ from zen_europe.datasets.dataset_collections.existing_vehicle_capacity import (
 from zen_europe.datasets.dataset_collections.passenger_mileage_demand import (
     PassengerMileageDemand,
 )
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_car_occupancy_kba import (  # noqa: E501
+    CircularityDemandReductionCarOccupancyKBA,  # demandreductioncircularity
+)
 from zen_europe.datasets.datasets.technology.passenger_cars_cox import PassengerCarsCox
 from zen_europe.datasets.datasets.technology.technology_diffusion_mannhardt import (
     TechnologyDiffusionMannhardt,
@@ -20,7 +23,15 @@ from zen_creator import (
     AssumptionInformation,
     Attribute,
     ConversionTechnology,
+    Scenario, # demandreductioncircularity
     SourceInformation,
+)
+
+# demandreductioncircularity
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    EFFICIENCY_IMPROVEMENTS,
+    TRANSPORT_EFFICIENCY_FACTORS,
+    scale_conversion_factor,
 )
 
 
@@ -29,8 +40,8 @@ class BEV(ConversionTechnology):
     vehicles (BEV, passenger transport)."""
 
     name: str = "BEV"
-
-    def __init__(self, model: Model, power_unit: str = "megavkm/h"):
+    # demandreductioncircularity: unit passenger-km instead of vehicle-km
+    def __init__(self, model: Model, power_unit: str = "megapkm/h"):
         super().__init__(model=model, power_unit=power_unit)
 
     # ---------- Required methods that are called during object construction ----------
@@ -75,7 +86,22 @@ class BEV(ConversionTechnology):
 
         """
         passenger_cars = PassengerCarsCox(source_path=self.source_path)
-        return passenger_cars.get_conversion_factor(element=self)
+        attr = passenger_cars.get_conversion_factor(element=self)
+        # demandreductioncircularity: per passenger-km
+        occupancy = CircularityDemandReductionCarOccupancyKBA(self.source_path)
+        attr = occupancy.convert_to_pkm(attr)
+        # demandreductioncircularity: efficiency improvements scenario, powertrain
+        # efficiency
+        attr.add_scenarios(
+            Scenario(
+                EFFICIENCY_IMPROVEMENTS,
+                default_value=scale_conversion_factor(
+                    attr.default_value,
+                    {"electricity": TRANSPORT_EFFICIENCY_FACTORS[self.name]},
+                ),
+            )
+        )
+        return attr
 
     def _set_opex_specific_variable(self) -> Attribute:
         """
@@ -83,7 +109,10 @@ class BEV(ConversionTechnology):
 
         """
         passenger_cars = PassengerCarsCox(source_path=self.source_path)
-        return passenger_cars.get_opex_specific_variable(element=self)
+        attr = passenger_cars.get_opex_specific_variable(element=self)
+        # demandreductioncircularity: per passenger-km
+        occupancy = CircularityDemandReductionCarOccupancyKBA(self.source_path)
+        return occupancy.convert_to_pkm(attr)
 
     def _set_capex_specific_conversion(self) -> Attribute:
         """
@@ -119,7 +148,7 @@ class BEV(ConversionTechnology):
                     ),
                     metadata=vehicle_capacity.metadata,
                 ),
-                unit="megavkm/h",
+                unit="megapkm/h", # demandreductioncircularity: pkm instead of vkm
             )
         else:
             attr = self.capacity_existing

@@ -9,6 +9,12 @@ from zen_europe.datasets.dataset_collections.truck_mileage_demand import (
     TruckMileageDemand,
 )
 from zen_europe.datasets.datasets.carrier.eurostat import Eurostat
+from zen_europe.datasets.datasets.carrier.statistical_pocketbook_transport import (
+    StatisticalPocketbookTransport,  # demandreductioncircularity
+)
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_car_occupancy_kba import (  # noqa: E501
+    CircularityDemandReductionCarOccupancyKBA,  # demandreductioncircularity
+)
 from zen_europe.datasets.datasets.technology.passenger_cars_cox import PassengerCarsCox
 from zen_europe.datasets.datasets.technology.truck_technologies_icct import (
     TruckTechnologiesICCT,
@@ -38,7 +44,9 @@ from zen_europe.utils.utils import (
 )
 
 # The capacity of a passenger car is the mileage it delivers per hour.
-_PASSENGER_CAPEX_UNIT = "Euro/(vkm/h)"
+#_PASSENGER_CAPEX_UNIT = "Euro/(vkm/h)"
+# demandreductioncircularity: in passenger-km per hour instead of vehicle-km
+_PASSENGER_CAPEX_UNIT = "Euro/(pkm/h)"
 # Passenger cars whose purchase price is dominated by the battery, and which
 # therefore follow the battery cost evolution of Cox et al. (2020).
 _BATTERY_CARS = ["BEV", "PHEV"]
@@ -51,7 +59,7 @@ _BATTERY_COST_FUTURE_YEAR = 2040
 # supply the fleet that exists today.
 _OIL_CONVERSION_CONSUMERS = {
     "oil_to_gasoline_conversion": ("gasoline", ["ICE_petrol"]),
-    "oil_to_diesel_conversion": ("diesel", ["ICE_diesel", "HDT_diesel"]),
+    "oil_to_diesel_conversion": ("diesel", ["ICE_diesel", "HDT_diesel", "bus_ICE_diesel"]), # demandreductioncircularity: the diesel buses are added
 }
 # Shipping is assumed to run entirely on diesel. Its fuel demand is taken
 # directly rather than through a fleet, so it is added separately.
@@ -59,11 +67,14 @@ _OIL_CONVERSION_WITH_SHIPPING = ["oil_to_diesel_conversion"]
 # An existing fleet capacity is in millions of vehicle or tonne kilometres per
 # hour, so the fuel demand per kilometre has to be scaled to give GW: a GWh/km
 # factor by 1e6, a kWh/km factor by 1, since 1e6 kWh make one GWh.
-_FUEL_DEMAND_SCALE = {"GWh/vkm": 1e6, "kWh/tkm": 1.0}
+# demandreductioncircularity: the passenger cars and buses are in GWh/pkm
+_FUEL_DEMAND_SCALE = {"GWh/vkm": 1e6, "GWh/pkm": 1e6, "kWh/tkm": 1.0}
 _OIL_CONVERSION_CAPACITY_UNIT = "GW"
 # Reference carrier of the technologies whose fleet is measured in tonne
 # kilometres rather than vehicle kilometres.
 _TRUCK_MILEAGE = "truck_mileage"
+# demandreductioncircularity: reference carrier of the buses
+_BUS_MILEAGE = "bus_mileage"
 
 
 class ExistingVehicleCapacity(DatasetCollection):
@@ -92,6 +103,13 @@ class ExistingVehicleCapacity(DatasetCollection):
             "truck_technologies": TruckTechnologiesICCT(self.source_path),
             "passenger_cars": PassengerCarsCox(self.source_path),
             "eurostat": Eurostat(self.settings, self.source_path),
+            # demandreductioncircularity: bus passenger-km and car occupancy
+            "statistical_pocketbook_transport": StatisticalPocketbookTransport(
+                self.settings, self.source_path
+            ),
+            "car_occupancy": CircularityDemandReductionCarOccupancyKBA(
+                self.source_path
+            ),
         }
 
     def get_existing_capacity_passenger(
@@ -114,15 +132,30 @@ class ExistingVehicleCapacity(DatasetCollection):
         total_demand = passenger_transport_db._get_total_demand(
             element=passenger_mileage
         )
-        mvkm_per_h = total_demand.sum() / fleet.iloc[:, -1].sum() / 8760  # mvkm/h
-        capacity_existing = registrations * mvkm_per_h
+        # demandreductioncircularity: total demand in million pkm, so the
+        # capacity is in million pkm per hour
+        mpkm_per_h = total_demand.sum() / fleet.iloc[:, -1].sum() / 8760  # mpkm/h
+        capacity_existing = registrations * mpkm_per_h
         capacity_existing = cast(pd.DataFrame, capacity_existing.loc[element.name])
-        hourly_demand = cast(pd.DataFrame, passenger_mileage.demand.df)
+        # demandreductioncircularity: passenger_mileage has no demand any more, so
+        # the hourly profile is taken from the dataset
+        hourly_demand = passenger_transport_db._get_hourly_demand(
+            element=passenger_mileage
+        )
         peak_demand_share = (hourly_demand / (total_demand / 8760)).max()
         # adjust the existing capacity to account for the peak demand share
         capacity_existing = capacity_existing.mul(peak_demand_share, axis=0)
         data = format_capacity_existing(capacity_existing.stack().astype(float))
         return data
+        #mvkm_per_h = total_demand.sum() / fleet.iloc[:, -1].sum() / 8760  # mvkm/h
+        #capacity_existing = registrations * mvkm_per_h
+        #capacity_existing = cast(pd.DataFrame, capacity_existing.loc[element.name])
+        #hourly_demand = cast(pd.DataFrame, passenger_mileage.demand.df)
+        #peak_demand_share = (hourly_demand / (total_demand / 8760)).max()
+        # adjust the existing capacity to account for the peak demand share
+        #capacity_existing = capacity_existing.mul(peak_demand_share, axis=0)
+        #data = format_capacity_existing(capacity_existing.stack().astype(float))
+        #return data
 
     def get_existing_capacity_truck(self, element: ConversionTechnology) -> pd.Series:
         """Get the existing vehicle capacity for trucks.
@@ -163,6 +196,48 @@ class ExistingVehicleCapacity(DatasetCollection):
         data = format_capacity_existing(capacity_existing.stack())
         return data
 
+        # demandreductioncircularity: existing buses
+
+    def get_existing_capacity_bus(self, element: ConversionTechnology) -> pd.Series:
+        """Get the existing capacity of diesel or battery electric buses.
+
+        As for the passenger cars: the new
+        bus registrations of each year are multiplied by the average mileage of
+        one bus (the bus passenger-km of the Statistical Pocketbook divided by
+        the bus fleet of the last year) and by the peak demand share of the
+        charging profile of the battery electric buses.
+        Args:
+            element (ConversionTechnology): bus_ICE_diesel or bus_BEV.
+
+        Returns:
+            pd.Series: The existing capacity in million pkm per hour.
+        """
+        unece = cast(UNECE, self.data["unece"])
+        registrations, _ = unece.get_buses("registrations")
+        _, fleet = unece.get_buses("fleet")
+        pocketbook = cast(
+            StatisticalPocketbookTransport,
+            self.data["statistical_pocketbook_transport"],
+        )
+        nodes = list(element.model.config.system.set_nodes)
+        bus_mileage = pocketbook.get_mode_mileage("bus_mileage", nodes)  # mpkm/a
+        common = fleet.index.intersection(bus_mileage.dropna().index)
+        mpkm_per_h = (
+                bus_mileage.loc[common].sum() / fleet.loc[common].iloc[:, -1].sum() / 8760
+        )
+        capacity_existing = registrations * mpkm_per_h
+        if element.name not in capacity_existing.index.get_level_values(0):
+            return format_capacity_existing(pd.Series(dtype=float))
+        capacity_existing = cast(pd.DataFrame, capacity_existing.loc[element.name])
+        passenger_transport_db = cast(PassengerMileageDemand, self.data["pass_demand"])
+        peak_demand_share = passenger_transport_db._get_peak_demand_share(
+            element=element.model.carriers["passenger_mileage"]
+        )
+        capacity_existing = capacity_existing.mul(peak_demand_share, axis=0).dropna(
+            how="all"
+        )
+        data = format_capacity_existing(capacity_existing.stack().astype(float))
+        return data
     def get_existing_capacity_oil_conversion(
         self, element: ConversionTechnology
     ) -> Attribute:
@@ -241,11 +316,12 @@ class ExistingVehicleCapacity(DatasetCollection):
     ) -> pd.Series:
         """Fuel demand in GW of the existing fleet of one vehicle technology,
         per node and year of construction."""
-        if (
-            cast(list[str], element.reference_carrier.default_value)[0]
-            == _TRUCK_MILEAGE
-        ):
+        reference_carrier = cast(list[str], element.reference_carrier.default_value)[0]
+        if reference_carrier == _TRUCK_MILEAGE:
             fleet = self.get_existing_capacity_truck(element=element)
+        # demandreductioncircularity: diesel buses
+        elif reference_carrier == _BUS_MILEAGE:
+            fleet = self.get_existing_capacity_bus(element=element)
         else:
             fleet = self.get_existing_capacity_passenger(element=element)
         return fleet * self._get_fuel_per_kilometre(element, carrier)
@@ -304,51 +380,53 @@ class ExistingVehicleCapacity(DatasetCollection):
             CAPEX.
         """
         cars = cast(PassengerCarsCox, self.data["passenger_cars"])
-        passenger_transport_db = cast(PassengerMileageDemand, self.data["pass_demand"])
-        passenger_mileage = element.model.carriers["passenger_mileage"]
-        peak_demand_share = passenger_transport_db._get_peak_demand_share(
-            element=passenger_mileage
+        # demandreductioncircularity: per passenger-km per hour, and without the
+        # peak demand share, multiplies the capex per vkm/h by 627.949852 / 902.6 and leaves out the
+        # division by the peak demand share)
+        occupancy_dataset = cast(
+            CircularityDemandReductionCarOccupancyKBA, self.data["car_occupancy"]
         )
-        capex = cars.get_cost(element, "capex")
+        occupancy = occupancy_dataset.get_occupancy()
+        capex = cars.get_cost(element, "capex") / occupancy
 
         df: pd.DataFrame | pd.Series | None
         if not element.settings.cost.use_learning_curves:
             # without learning curves every node and year uses the default
             df = None
         elif element.name in _BATTERY_CARS:
-            evolution = self._get_capex_evolution_passenger(element, cars, capex)
-            nodal = 1 / peak_demand_share.dropna()
-            df = pd.DataFrame(
-                np.outer(evolution, nodal), index=evolution.index, columns=nodal.index
+            evolution = self._get_capex_evolution_passenger(
+                element, cars, capex * occupancy
             )
+            df = evolution / occupancy
             df.index.name = "year"
-        else:
-            df = capex / peak_demand_share.dropna()
-            df.index.name = "node"
             df.name = "capex_specific_conversion"
+        else:
+            df = None
 
         attr = element.capex_specific_conversion
         return attr.set_data(
             df=df,
-            default_value=float(capex / peak_demand_share.mean()),
+            default_value=float(capex),
             source=SourceInformation(
                 description=(
-                    f"The specific conversion CAPEX of {element.name} is the "
-                    "purchase price of the lower medium car of Cox et al. "
-                    "(2020), taken at the manufacturing cost rather than at "
-                    "the consumer price, i.e. divided by the markup factor. "
-                    "It is divided by the hourly mileage of the car and "
-                    "adjusted for the peak demand share. Monetary values are "
-                    f"rebased from {cars.MONEY_YEAR} to "
-                    f"{element.settings.cost.price_year} Euro using ECB "
-                    "HICP inflation."
-                    + (
-                        " The battery share of the price follows the battery "
-                        "cost of Cox et al. from the reference year to their "
-                        "2040 value and stays constant afterwards."
-                        if element.name in _BATTERY_CARS
-                        else ""
-                    )
+                        f"The specific conversion CAPEX of {element.name} is the "
+                        "purchase price of the lower medium car of Cox et al. "
+                        "(2020), taken at the manufacturing cost rather than at "
+                        "the consumer price, i.e. divided by the markup factor. "
+                        "It is divided by the hourly mileage of the car. Monetary "
+                        f"values are rebased from {cars.MONEY_YEAR} to "
+                        f"{element.settings.cost.price_year} Euro using ECB "
+                        "HICP inflation. It is converted from vehicle-km to "
+                        f"passenger-km with an occupancy of {occupancy:.3f} "
+                        "(Germany, KBA and Statistical Pocketbook) and not adjusted "
+                        "for the peak demand share"
+                        + (
+                            " The battery share of the price follows the battery "
+                            "cost of Cox et al. from the reference year to their "
+                            "2040 value and stays constant afterwards."
+                            if element.name in _BATTERY_CARS
+                            else ""
+                        )
                 ),
                 metadata=self.metadata,
             ),

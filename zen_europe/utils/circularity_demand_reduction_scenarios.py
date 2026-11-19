@@ -48,6 +48,23 @@ DEMAND_FACTORS: dict[str, dict[str, float]] = {
         # table but not in the thesis runs, added here (see the Excel overview)
         CRISIS: 0.92,
     },
+    # demandreductioncircularity: passenger transport chain
+    "urban_transport": {
+        # compact city design, more walking and cycling: -11% (Mason et al. [108])
+        COMPACT_CITIES: 0.89,
+        # remote work, trip avoidance, limited modal shift: -10% (EEA 2022 [135],
+        # Walsh et al. [136])
+        CONSUMER_DEMAND_REDUCTION: 0.90,
+        # lockdowns and travel restrictions, 2020 vs 2019: -21.6% (EU Statistical
+        # Pocketbook [59], ERF 2023 [142])
+        CRISIS: 0.784,
+    },
+    "regional_transport": {
+        # fewer commutes and business trips: -10% (EEA 2022 [135], ICCT [137])
+        CONSUMER_DEMAND_REDUCTION: 0.90,
+        # lockdowns and travel restrictions, 2020 vs 2019: -23.6% ([59], [142])
+        CRISIS: 0.764,
+    },
 }
 
 # industrial circular push: scrap steel availability from the upper-bound JRC
@@ -72,6 +89,26 @@ RAW_MATERIAL_FOR_CLINKER_FACTOR = 0.85
 # polymerisation x0.85. Olefin stays 1 t/t to keep the mass balance
 POLYMERISATION_ENERGY_FACTOR = 0.85
 
+# demandreductioncircularity: passenger transport chain
+# compact cities: the share of urban car travel is set to 50% of each country's
+# 2019 share, as minimum and maximum (
+COMPACT_CITIES_CAR_SHARE_FACTOR = 0.5
+# efficiency improvements: factor on the energy input per passenger-km
+TRANSPORT_EFFICIENCY_FACTORS: dict[str, float] = {
+    # powertrain efficiency, -15% (Dahham et al.)
+    "ICE_petrol": 0.85,
+    "ICE_diesel": 0.85,
+    # lower inverter, motor and thermal losses, -15% (Singer et al. )
+    "BEV": 0.85,
+    # engine efficiency, -20% (U.S. DOE )
+    "bus_ICE_diesel": 0.80,
+    # drivetrain efficiency, -12.5% (ICCT )
+    "bus_BEV": 0.875,
+    # traction efficiency, -12.5% (IEA ETP 2023, UIC )
+    "tram_metro": 0.875,
+    # traction efficiency, -15%
+    "train": 0.85,
+}
 def demand_reduction_scenarios(carrier_name: str) -> list[Scenario]:
     """Return the demand scenarios of a carrier, applied as a factor on the demand.
 
@@ -114,20 +151,22 @@ def scale_conversion_factor(
     ]
 
 # demandreductioncircularity: helper for the input share constraints
-def input_share_series(element, carrier: str, value: float):
+def input_share_series(element, carrier: str, value: float, name: str):
     """Return an input share as a Series over carrier, node and year.
 
-    The tech_share_limits plugin reads input_share_min/max per input carrier,
-    so the share only applies to the named carrier (not to e.g. electricity).
+       The tech_share_limits plugin reads input_share_min/max per input carrier,
+       so the share only applies to the named carrier (not to e.g. electricity).
 
-    Args:
-        element: The conversion technology.
-        carrier: The input carrier the share applies to, e.g. 'plastic_waste'.
-        value: The share (0-1).
+       Args:
+           element: The conversion technology.
+           carrier: The input carrier the share applies to, e.g. 'plastic_waste'.
+           value: The share (0-1).
+           name: The attribute name, used as the value column of the csv
+               (e.g. 'input_share_min').
 
-    Returns:
-        pd.Series: The share, indexed by carrier, node and year.
-    """
+       Returns:
+           pd.Series: The share, indexed by carrier, node and year.
+       """
     import pandas as pd
 
     index = pd.MultiIndex.from_product(
@@ -138,4 +177,4 @@ def input_share_series(element, carrier: str, value: float):
         ],
         names=["carrier", "node", "year"],
     )
-    return pd.Series(value, index=index)
+    return pd.Series(value, index=index, name=name)

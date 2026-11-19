@@ -35,7 +35,12 @@ BASE_CATEGORIES = [
 GRAND_TOTAL = ("Grand total", "Grand total", "Total")
 
 SECTOR_CATEGORIES = {
-    "passenger_transport": [("Domestic transport", "Road", "Passenger cars")],
+    # demandreductioncircularity: buses and railways added (MSc thesis U. Bhagole)
+    "passenger_transport": [
+        ("Domestic transport", "Road", "Passenger cars"),
+        ("Domestic transport", "Road", "Buses"),
+        ("Domestic transport", "Railways", "Railways - mobile combustion"),
+    ],
     "truck_transport": [("Domestic transport", "Road", "HGVs")],
     "refining": [("Fuel supply", "Oil and gas supply", "Oil refineries")],
     "cement": [("Industry", "Industrial processes", "Cement production")],

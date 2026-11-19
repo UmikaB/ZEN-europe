@@ -57,10 +57,9 @@ class PassengerMileageDemand(DatasetCollection):
             description=(
                 "Total passenger mileage demand is derived from the Statistical "
                 "Pocketbook Transport dataset, which provides data on passenger and "
-                "truck mileage in the EU. The total passenger mileage is adjusted for "
-                "vehicle occupancy using data from Eurostat. The standard load "
-                "profiles for urban, suburban, and rural areas are obtained from the "
-                "Standard Load Profiles dataset, which provides hourly load profiles "
+                "truck mileage in the EU, in passenger-km. "  # demandreductioncircularity
+                "The standard load profiles for urban, suburban, and rural areas are obtained "
+                "from the Standard Load Profiles dataset, which provides hourly load profiles "
                 "for different types of days and region types. The final passenger "
                 "mileage demand is calculated by multiplying the total passenger "
                 "mileage by the weighted standard load profiles based on the share of "
@@ -71,7 +70,8 @@ class PassengerMileageDemand(DatasetCollection):
         return element.demand.set_data(
             source=source,
             df=slp,
-            unit="megavkm/hour",
+            #unit="megavkm/hour",
+            unit="megapkm/hour",  # demandreductioncircularity: pkm
         )
 
     def _get_hourly_demand(self, element: Carrier) -> pd.DataFrame:
@@ -139,18 +139,20 @@ class PassengerMileageDemand(DatasetCollection):
             unit="1",
         )
 
+
+# demandreductioncircularity
     def _get_total_demand(self, element: Carrier) -> pd.Series:
         """
         Get the total passenger mileage demand.
 
-        Corrects for vehicle occupancy to convert from passenger-km to vehicle-km.
+        # demandreductioncircularity; kept in passenger-km instead of vehicle-km
         """
         spt_dataset = cast(
             StatisticalPocketbookTransport,
             self.data["statistical_pocketbook_transport"],
         )
         total_demand = spt_dataset.get_total_mileage(element)
-        eurostat_dataset = cast(Eurostat, self.data["eurostat"])
-        vehicle_occupancy = eurostat_dataset.get_vehicle_occupancy()
-        total_demand = total_demand / vehicle_occupancy  # from pkm to vkm
+        #eurostat_dataset = cast(Eurostat, self.data["eurostat"])
+        #vehicle_occupancy = eurostat_dataset.get_vehicle_occupancy()
+        #total_demand = total_demand / vehicle_occupancy  # from pkm to vkm
         return total_demand

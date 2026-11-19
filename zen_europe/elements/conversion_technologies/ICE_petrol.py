@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from zen_europe.datasets.dataset_collections.existing_vehicle_capacity import (
     ExistingVehicleCapacity,
 )
-from zen_europe.datasets.dataset_collections.passenger_mileage_demand import (
-    PassengerMileageDemand,
+from zen_europe.datasets.datasets.technology.circularity_demand_reduction_car_occupancy_kba import (
+    CircularityDemandReductionCarOccupancyKBA,  # demandreductioncircularity
 )
 from zen_europe.datasets.datasets.technology.passenger_cars_cox import PassengerCarsCox
 from zen_europe.datasets.datasets.technology.technology_diffusion_mannhardt import (
@@ -20,9 +20,15 @@ from zen_creator import (
     AssumptionInformation,
     Attribute,
     ConversionTechnology,
+    Scenario,  # demandreductioncircularity
     SourceInformation,
 )
-
+# demandreductioncircularity
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    EFFICIENCY_IMPROVEMENTS,
+    TRANSPORT_EFFICIENCY_FACTORS,
+    scale_conversion_factor,
+)
 
 class ICE_petrol(ConversionTechnology):
     """Class containing all data and assumptions for petrol internal
@@ -30,7 +36,8 @@ class ICE_petrol(ConversionTechnology):
 
     name: str = "ICE_petrol"
 
-    def __init__(self, model: Model, power_unit: str = "megavkm/h"):
+    # demandreductioncircularity: passenger-km instead of vehicle-km
+    def __init__(self, model: Model, power_unit: str = "megapkm/h"):
         super().__init__(model=model, power_unit=power_unit)
 
     # ---------- Required methods that are called during object construction ----------
@@ -73,7 +80,21 @@ class ICE_petrol(ConversionTechnology):
 
         """
         passenger_cars = PassengerCarsCox(source_path=self.source_path)
-        return passenger_cars.get_conversion_factor(element=self)
+        attr = passenger_cars.get_conversion_factor(element=self)
+        # demandreductioncircularity: per passenger-km
+        occupancy = CircularityDemandReductionCarOccupancyKBA(self.source_path)
+        attr = occupancy.convert_to_pkm(attr)
+        # demandreductioncircularity: efficiency improvements, powertrain efficiency
+        attr.add_scenarios(
+            Scenario(
+                EFFICIENCY_IMPROVEMENTS,
+                default_value=scale_conversion_factor(
+                    attr.default_value,
+                    {"gasoline": TRANSPORT_EFFICIENCY_FACTORS[self.name]},
+                ),
+            )
+        )
+        return attr
 
     def _set_opex_specific_variable(self) -> Attribute:
         """
@@ -81,7 +102,10 @@ class ICE_petrol(ConversionTechnology):
 
         """
         passenger_cars = PassengerCarsCox(source_path=self.source_path)
-        return passenger_cars.get_opex_specific_variable(element=self)
+        attr = passenger_cars.get_opex_specific_variable(element=self)
+        # demandreductioncircularity: per passenger-km
+        occupancy = CircularityDemandReductionCarOccupancyKBA(self.source_path)
+        return occupancy.convert_to_pkm(attr)
 
     def _set_capex_specific_conversion(self) -> Attribute:
         """
@@ -117,7 +141,7 @@ class ICE_petrol(ConversionTechnology):
                     ),
                     metadata=vehicle_capacity.metadata,
                 ),
-                unit="megavkm/h",
+                unit="megapkm/h",  # demandreductioncircularity: pkm
             )
         else:
             attr = self.capacity_existing
@@ -130,15 +154,18 @@ class ICE_petrol(ConversionTechnology):
             )
             return attr
 
-    def _set_max_load(self) -> Attribute:
-        """
-        Sets the maximum load of ICE petrol.
 
-        """
-        passenger_transport_db = PassengerMileageDemand(
-            settings=self.model.settings, source_path=self.source_path
-        )
-        return passenger_transport_db.get_max_load(element=self)
+    # demandreductioncircularity: no max_load for ICE cars (only the BEV follows the charging profile)
+
+   #def _set_max_load(self) -> Attribute:
+   #    """
+   #    Sets the maximum load of ICE petrol.
+   #
+   #    """
+   #    passenger_transport_db = PassengerMileageDemand(
+   #        settings=self.model.settings, source_path=self.source_path
+   #    )
+   #    return passenger_transport_db.get_max_load(element=self)
 
     def _set_max_diffusion_rate(self) -> Attribute:
         """

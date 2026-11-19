@@ -33,6 +33,8 @@ energy_system:
       - megaEuro
       - kilotCO2
       - megavkm
+      # demandreductioncircularity: passenger transport in passenger-km
+      - megapkm
       - megatkm
       - ktproduct
     definitions:
@@ -51,6 +53,13 @@ energy_system:
         aliases:
           - vehicle_km
           - vehicle_kilometer
+      # demandreductioncircularity: passenger-km (urban and regional passenger
+      # transport, cars, buses, trams/metros and trains)
+      pkm:
+        dimension: passenger_mileage
+        aliases:
+          - passenger_km
+          - passenger_kilometer
       tkm:
         dimension: tonne_mileage
         aliases:

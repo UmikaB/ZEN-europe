@@ -36,7 +36,9 @@ COMMERCIAL_AND_RESIDENTIAL_CODES = ["1.A.4.a", "1.A.4.b"]
 PUBLIC_ELECTRICITY_AND_HEAT_CODE = "1.A.1.a"
 ENERGY_INDUSTRIES_CODE = "1.A.1"
 SECTOR_CODES = {
-    "passenger_transport": ["1.A.3.b.i"],
+# demandreductioncircularity: railways added (trains);
+    # buses are part of 1.A.3.b.iii, which is already counted for truck_transport
+    "passenger_transport": ["1.A.3.b.i", "1.A.3.c"],
     "truck_transport": ["1.A.3.b.iii"],
     "refining": ["1.A.1.b"],
     "cement": ["1.A.2.f", "2.A"],

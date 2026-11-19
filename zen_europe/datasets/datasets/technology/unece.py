@@ -49,6 +49,11 @@ _LORRIES = {
     "registrations": "New lorries (vehicle wt over 3500 kg)",
     "fleet": "Lorries (vehicle wt over 3500 kg)",
 }
+# demandreductioncircularity: buses
+_BUSES = {
+    "registrations": "New motor coaches, buses and trolley buses",
+    "fleet": "Motor coaches, buses and trolleybuses",
+}
 
 # Fuel types are reported both as aggregates ("Petrol") and as mutually
 # exclusive sub-categories ("Petrol (excluding hybrids)", "Hybrid
@@ -89,6 +94,12 @@ _PLUG_IN_HYBRID_CAR = "PHEV"
 _DIESEL_TRUCK = "HDT_diesel"
 _ELECTRIC_TRUCK = "HDT_BET"
 _HYDROGEN_TRUCK = "HDT_FCEV"
+
+# demandreductioncircularity: names of the bus technologies in zen_europe. Only
+# diesel and electric buses are counted.
+# ('Alternative (total)' mixes electric with gas, hydrogen and trolley buses).
+_DIESEL_BUS = "bus_ICE_diesel"
+_ELECTRIC_BUS = "bus_BEV"
 
 # UNECE reports 1048 new electric lorries in the United Kingdom in 2016, two
 # orders of magnitude above the surrounding years (3 in 2015, 12 in 2017);
@@ -478,6 +489,52 @@ class UNECE(Dataset[dict[str, pd.DataFrame]]):
         aggregated = aggregated.bfill(axis=1)
         total = total.bfill(axis=1)
         return aggregated.sort_index(), total.sort_index()
+
+
+    # demandreductioncircularity: buses
+    def get_buses(self, table: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Aggregate the buses and coaches of one UNECE table into the bus
+        technologies of zen_europe.
+
+        Args:
+            table: Either 'registrations' or 'fleet'.
+
+        Returns:
+            A tuple of the buses per technology (bus_ICE_diesel, bus_BEV) and
+            node, and of the reported total per node (both with the years as
+            columns).
+        """
+        raw = self.get_raw_data(table)
+        if _BUSES[table] not in raw.index.get_level_values("vehicle_type"):
+            raise ValueError(
+                f"The UNECE table '{table}' has no vehicle type '{_BUSES[table]}'."
+            )
+        data = cast(pd.DataFrame, raw.loc[_BUSES[table]])
+        data = data.loc[:, data.notna().any(axis=0)]
+        fuel_types = data.index.get_level_values(0)
+        diesel = (
+            data.loc[_DIESEL_INCLUDING_HYBRIDS]
+            if _DIESEL_INCLUDING_HYBRIDS in fuel_types
+            else pd.DataFrame(columns=data.columns)
+        )
+        electric = (
+            data.loc[_ELECTRIC]
+            if _ELECTRIC in fuel_types
+            else pd.DataFrame(columns=data.columns)
+        )
+        aggregated = pd.concat(
+            [diesel, electric], keys=[_DIESEL_BUS, _ELECTRIC_BUS]
+        ).fillna(0)
+        aggregated.index.names = ["technology", "node"]
+        if _TOTAL in fuel_types:
+            total = cast(pd.DataFrame, data.loc[_TOTAL])
+        else:
+            total = data.groupby(level=1).sum()
+        total = linearly_fill_missing_years(total)
+        total.index.name = "node"
+        return aggregated.sort_index(), total.sort_index()
+
+
 
     # -------- helpers ------------------
 

@@ -6,6 +6,15 @@ from .biomass_boiler import BiomassBoiler
 from .biomass_boiler_DH import BiomassBoilerDH
 from .biomass_plant import BiomassPlant
 from .biomethane_conversion import BiomethaneConversion
+from .bus_BEV import Bus_BEV  # demandreductioncircularity
+from .bus_ICE_diesel import Bus_ICE_diesel  # demandreductioncircularity
+from .bus_to_urban import BusToUrban  # demandreductioncircularity
+from .car_passenger_mileage_to_regional import (  # demandreductioncircularity
+    CarPassengerMileageToRegional,
+)
+from .car_passenger_mileage_to_urban import (  # demandreductioncircularity
+    CarPassengerMileageToUrban,
+)
 from .carbon_storage import CarbonStorage
 from .cement_fines_for_clinker import (
     CementFinesForClinker,  # demandreductioncircularity
@@ -89,6 +98,12 @@ from .secondary_steel_to_steel import (
  SecondarySteelToSteel,  # demandreductioncircularity
 )
 from .SMR import SMR
+from .train import Train  # demandreductioncircularity
+from .train_passenger_mileage_to_regional import (  # demandreductioncircularity
+    TrainPassengerMileageToRegional,
+)
+from .tram_metro import TramMetro  # demandreductioncircularity
+from .tram_metro_to_urban import TramMetroToUrban  # demandreductioncircularity
 from .waste_boiler_DH import WasteBoilerDH
 from .waste_plant import WastePlant
 from .wind_offshore import WindOffshore
@@ -155,8 +170,8 @@ __all__ = [
     "H2_DRI",
     "NG_DRI",
     "EAF",
-    "PrimarySteelToSteel", # demandreductioncircularity
-    "SecondarySteelToSteel", # demandreductioncircularity
+    "PrimarySteelToSteel",  # demandreductioncircularity
+    "SecondarySteelToSteel",  # demandreductioncircularity
     "Pyrolysis",
     "DieselICEShip",
     "HydrogenFCShip",
@@ -169,6 +184,16 @@ __all__ = [
     "BEV",
     "ICE_diesel",
     "ICE_petrol",
+    # demandreductioncircularity: passenger transport chain
+    "Bus_ICE_diesel",
+    "Bus_BEV",
+    "TramMetro",
+    "Train",
+    "CarPassengerMileageToUrban",
+    "CarPassengerMileageToRegional",
+    "BusToUrban",
+    "TramMetroToUrban",
+    "TrainPassengerMileageToRegional",
     "HDT_diesel",
     "HDT_BET",
     "HDT_FCEV",

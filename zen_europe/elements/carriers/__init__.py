@@ -1,6 +1,7 @@
 from .ammonia import Ammonia
 from .biomass import Biomass
 from .biomethane import Biomethane
+from .bus_mileage import BusMileage  # demandreductioncircularity
 from .carbon import Carbon
 from .cement import Cement  # demandreductioncircularity
 from .clinker import Clinker
@@ -33,12 +34,16 @@ from .plastic_use import PlasticUse  # demandreductioncircularity
 from .plastic_waste import PlasticWaste  # demandreductioncircularity
 from .primary_steel import PrimarySteel
 from .raw_material_clinker import RawMaterialClinker  # demandreductioncircularity
+from .regional_transport import RegionalTransport  # demandreductioncircularity
 from .scrap_steel import ScrapSteel  # demandreductioncircularity
 from .secondary_steel import SecondarySteel
 from .shipping import Shipping
 from .steel import Steel  # demandreductioncircularity
+from .train_mileage import TrainMileage  # demandreductioncircularity
+from .tram_metro_mileage import TramMetroMileage  # demandreductioncircularity
 from .truck_mileage import TruckMileage
 from .uranium import Uranium
+from .urban_transport import UrbanTransport  # demandreductioncircularity
 from .waste import Waste
 from .wet_biomass import WetBiomass
 
@@ -86,4 +91,10 @@ __all__ = [
     "CrudeOil",
     "FuelForCement",
     "Uranium",
+# demandreductioncircularity: passenger transport chain
+    "UrbanTransport",
+    "RegionalTransport",
+    "BusMileage",
+    "TramMetroMileage",
+    "TrainMileage",
 ]

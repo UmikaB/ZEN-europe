@@ -8,7 +8,8 @@ from zen_creator.datasets.datasets.dataset import Dataset
 from zen_creator.datasets.datasets.metadata import MetaData
 from zen_creator.utils.settings import Settings
 
-
+# demandreductioncircularity: sheets with the passenger-km of public transport
+PUBLIC_TRANSPORT_SHEETS = ["bus_mileage", "tram_mileage", "train_mileage"]
 class StatisticalPocketbookTransport(Dataset[dict[str, pd.Series]]):
     """
     Statistical pocketbook transport dataset class.
@@ -48,6 +49,15 @@ class StatisticalPocketbookTransport(Dataset[dict[str, pd.Series]]):
         for t in types:
             sheet = pd.read_excel(self.path, sheet_name=t).set_index("Column1")
             data[t] = sheet[str(year_time_series)].str.replace(" ", "").astype(float)
+            # demandreductioncircularity: passenger-km of buses and coaches, trams and
+            # metros and railways (sheets added in the MSc thesis of U. Bhagole);
+            # '-' (not reported) is read as missing
+        for t in PUBLIC_TRANSPORT_SHEETS:
+            sheet = pd.read_excel(self.path, sheet_name=t).set_index("Column1")
+            data[t] = pd.to_numeric(
+                sheet[str(year_time_series)].astype(str).str.replace(" ", ""),
+                errors="coerce",
+            )
         return data
 
     # -------- methods ------------------------
@@ -63,3 +73,30 @@ class StatisticalPocketbookTransport(Dataset[dict[str, pd.Series]]):
         data.index.name = "node"
         data.name = "demand"
         return data
+
+# demandreductioncircularity: passenger-km per transport mode
+    def get_mode_mileage(self, mode: str, nodes: list[str]) -> pd.Series:
+        """
+        Get the annual passenger-km of one transport mode.
+
+        Args:
+            mode: 'passenger_mileage' (cars), 'bus_mileage', 'tram_mileage' or
+                'train_mileage'.
+            nodes: The nodes to return.
+
+        Returns:
+            pd.Series: Million passenger-km per year and node, NaN where the
+                pocketbook reports no value.
+        """
+        data = self.data[mode].reindex(nodes) * 1000  # million pkm/a
+        data.index.name = "node"
+        data.name = mode
+        return data
+
+    def get_mode_mileage_all_countries(self, mode: str) -> pd.Series:
+        """
+        Get the annual passenger-km of one mode for all countries in the
+        pocketbook (without the EU aggregates), in million pkm per year.
+        """
+        data = self.data[mode]
+        return data[~data.index.astype(str).str.startswith("EU")] * 1000

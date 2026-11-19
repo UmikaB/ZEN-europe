@@ -15,7 +15,16 @@ FACTOR_HIGH_DEMAND_GENERIC = 1.25
 # carriers grouped by the economic sector they vary demand together with
 DEMAND_SENSITIVITY_SECTORS: dict[str, list[str]] = {
     "electricity_heat": ["electricity", "heat"],
-    "transport": ["passenger_mileage", "truck_mileage", "kerosene", "shipping"],
+    #"transport": ["passenger_mileage", "truck_mileage", "kerosene", "shipping"],
+    "transport": [
+            # demandreductioncircularity: the passenger transport demand sits on
+            # urban_transport and regional_transport (instead of passenger_mileage)
+            "urban_transport",
+            "regional_transport",
+            "truck_mileage",
+            "kerosene",
+            "shipping",
+        ],
     "industry": [
         # demandreductioncircularity: the steel demand sits on the steel carrier
         "steel",
