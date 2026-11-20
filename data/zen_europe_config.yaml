@@ -5,7 +5,7 @@ source_path: "./data/raw_data"
 # set_nodes. settings that are not listed keep ZEN-garden's defaults.
 system:
   conduct_time_series_aggregation: true
-  aggregated_time_steps_per_year: 50
+  aggregated_time_steps_per_year: 30  # demandreductioncircularity: 30 representative time steps
   use_rolling_horizon: false
 
 # demandreductioncircularity: ZEN-garden plugin with the share constraints
@@ -20,7 +20,10 @@ plugins:
 # a setting that controls a system value (e.g. region.set_nodes) is set here
 # and not under `system:` above; structure.* replaces the old `elements:`
 # block for the same reason.
-settings: {}
+settings:
+  # demandreductioncircularity: 2022-2050 in two-year steps (15 years)
+  time:
+    interval_between_years: 2
 
 # settings that go into the energy_system folder
 energy_system:

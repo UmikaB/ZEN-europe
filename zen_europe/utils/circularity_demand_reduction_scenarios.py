@@ -65,6 +65,32 @@ DEMAND_FACTORS: dict[str, dict[str, float]] = {
         # lockdowns and travel restrictions, 2020 vs 2019: -23.6% ([59], [142])
         CRISIS: 0.764,
     },
+# demandreductioncircularity: other final demands
+    "kerosene": {
+        # aircraft efficiency, aviation not modelled explicitly: -19.6% (IEA Net
+        # Zero by 2050)
+        EFFICIENCY_IMPROVEMENTS: 0.804,
+        # fewer flights, rail substitution: -15% (IEA)
+        CONSUMER_DEMAND_REDUCTION: 0.85,
+        # lockdowns and travel restrictions, 2020 vs 2019: -55%
+        CRISIS: 0.45,
+    },
+    "shipping": {
+        # less shipping during the lockdowns: -11%
+        CRISIS: 0.89,
+    },
+    "heat": {
+        # thermostat setback, boiler tuning, shorter showers: -15%
+        CONSUMER_DEMAND_REDUCTION: 0.85,
+        # behavioural heat conservation during the energy crisis: -10% =
+        CRISIS: 0.90,
+    },
+    "electricity": {
+        # LEDs, efficient appliances, standby cuts: -20% ;
+        CONSUMER_DEMAND_REDUCTION: 0.80,
+        # behavioural electricity conservation during the energy crisis: -10%
+        CRISIS: 0.90,
+    },
 }
 
 # industrial circular push: scrap steel availability from the upper-bound JRC
@@ -108,6 +134,23 @@ TRANSPORT_EFFICIENCY_FACTORS: dict[str, float] = {
     "tram_metro": 0.875,
     # traction efficiency, -15%
     "train": 0.85,
+# demandreductioncircularity: heavy-duty trucks
+    # engine efficiency, -20%
+    "HDT_diesel": 0.80,
+    # drivetrain efficiency, -12.5%
+    "HDT_BET": 0.875,
+    # system efficiency, -20%
+    "HDT_FCEV": 0.80,
+    # demandreductioncircularity: ships
+    # propulsion efficiency, -20%
+    "diesel_ICE_ship": 0.80,
+    # propulsion efficiency, -15%
+    "methanol_ICE_ship": 0.85,
+    # propulsion efficiency, -15%
+    "ammonia_ICE_ship": 0.85,
+    # stack and balance-of-plant efficiency, -15% ; applied to the
+    # hydrogen and to the electricity for its liquefaction
+    "hydrogen_FC_ship": 0.85,
 }
 def demand_reduction_scenarios(carrier_name: str) -> list[Scenario]:
     """Return the demand scenarios of a carrier, applied as a factor on the demand.
@@ -149,6 +192,26 @@ def scale_conversion_factor(
         }
         for entry in conversion_factor
     ]
+# demandreductioncircularity: helper for the efficiency scenarios of vehicles
+def efficiency_scenario(conversion_factor: list[dict], technology: str) -> Scenario:
+    """Return the efficiency improvements scenario of a vehicle or ship.
+
+    All input carriers of the conversion factor are scaled with the factor of
+    the technology in TRANSPORT_EFFICIENCY_FACTORS.
+
+    Args:
+        conversion_factor: The default value of the conversion factor.
+        technology: Name of the technology, e.g. 'HDT_diesel'.
+
+    Returns:
+        Scenario: The efficiency improvements scenario.
+    """
+    factor = TRANSPORT_EFFICIENCY_FACTORS[technology]
+    carriers = {carrier: factor for entry in conversion_factor for carrier in entry}
+    return Scenario(
+        EFFICIENCY_IMPROVEMENTS,
+        default_value=scale_conversion_factor(conversion_factor, carriers),
+    )
 
 # demandreductioncircularity: helper for the input share constraints
 def input_share_series(element, carrier: str, value: float, name: str):

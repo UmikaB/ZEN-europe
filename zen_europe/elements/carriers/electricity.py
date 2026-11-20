@@ -9,6 +9,9 @@ from zen_creator.elements import Carrier
 from zen_creator.utils.attribute import Attribute
 
 from zen_europe.datasets.dataset_collections.electricity_demand import ElectricityDemand
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    demand_reduction_scenarios,  # demandreductioncircularity
+)
 from zen_europe.utils.demand_sensitivity import demand_sensitivity_scenarios
 
 
@@ -31,6 +34,8 @@ class Electricity(Carrier):
             self.settings, self.model.config.system.set_nodes, self.source_path
         )
         attr = electricity_demand_dataset.get_demand(self)
+        # demandreductioncircularity: scenarios Consumer demand reduction and Crisis (thesis UB)
+        attr.add_scenarios(demand_reduction_scenarios(self.name))
         if self.settings.scenario.sensitivity_demand:
             attr.add_scenarios(demand_sensitivity_scenarios(self.name))
         return attr

@@ -15,7 +15,10 @@ if TYPE_CHECKING:
 from zen_creator import Attribute, ConversionTechnology, SourceInformation
 
 from zen_europe.utils.constants import Constants
-
+# demandreductioncircularity
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    efficiency_scenario,
+)
 
 class HydrogenFCShip(ConversionTechnology):
     """Class containing all data and assumptions for hydrogen fuel cell
@@ -89,6 +92,8 @@ class HydrogenFCShip(ConversionTechnology):
             metadata=korberg_dataset.metadata,
         )
         attr.set_data(default_value=cf, source=source)
+        # demandreductioncircularity: efficiency improvements scenario
+        attr.add_scenarios(efficiency_scenario(attr.default_value, self.name))
         return attr
 
     def _set_opex_specific_variable(self) -> Attribute:

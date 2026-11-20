@@ -25,6 +25,11 @@ from zen_creator import (
     SourceInformation,
 )
 
+# demandreductioncircularity
+from zen_europe.utils.circularity_demand_reduction_scenarios import (
+    efficiency_scenario,
+)
+
 
 class HDT_FCEV(ConversionTechnology):
     """Class containing all data and assumptions for fuel cell electric
@@ -75,7 +80,10 @@ class HDT_FCEV(ConversionTechnology):
 
         """
         hdt_dataset = TruckTechnologiesICCT(source_path=self.source_path)
-        return hdt_dataset.get_conversion_factor(element=self)
+        attr = hdt_dataset.get_conversion_factor(element=self)
+        # demandreductioncircularity: efficiency improvements scenario
+        attr.add_scenarios(efficiency_scenario(attr.default_value, self.name))
+        return attr
 
     def _set_opex_specific_variable(self) -> Attribute:
         """
