@@ -280,14 +280,17 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
         """
         Get the specific capex of polymerisation from the Aidres dataset.
 
-        Polyethylene plant of 118.44 MEuro for 34,247 kg/h (Table 30, money year
-        2007), inflated to the price year with the ECB inflation rate.
+        Polyethylene plant of 118.44 MEuro (Table 30, money year 2007) that
+        produces 25 t PE/h, inflated to the price year with the ECB inflation
+        rate. The capex is taken per t of plastic output, the unit of the
+        polymerisation capacity (Aidres gives the plant size also as 34,247 kg/h
+        olefin-equivalent, which does not fit the 1:1 olefin-to-plastic factor).
 
         Returns:
             Attribute: The specific capex in Euro/(t plastic/h).
         """
         capex_total = 118.44 * 1e6  # Euro, Table 30, polyethylene
-        capacity = 34247  # kg/h, Table 30
+        capacity = 25000  # kg PE/h (plant output), Table 30
         money_year = 2007
         capex_specific_value = capex_total / capacity * 1000  # Euro/(t/h)
         inflation = ECBInflation(source_path=self.source_path).get_inflation_rate(
@@ -301,8 +304,9 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
             source=SourceInformation(
                 description=(
                     "The specific capex of polymerisation is the Aidres "
-                    "polyethylene plant (118.44 MEuro for 34,247 kg/h, money year "
-                    "2007), inflated to the price year (Aidres et al. 2023)."
+                    "polyethylene plant (118.44 MEuro, money year 2007) per t of "
+                    "plastic output (25 t PE/h), inflated to the price year "
+                    "(Aidres et al. 2023)."
                 ),
                 metadata=self.metadata,
             ),
