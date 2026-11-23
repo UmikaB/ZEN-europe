@@ -244,9 +244,8 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
         Get the conversion factor of polymerisation (olefin to plastic).
 
         Electricity and heat follow the Aidres reference route for polyethylene
-        (Table 34, (NG) PE-REF: 0.49 GJ electricity and 0.29 GJ natural gas per t
-        of polyethylene); the natural gas is modelled as heat. One ton of olefin
-        per ton of plastic is an assumption.
+        (Table 34, (NG) PE-REF: 0.518 GJ electricity (thesis Table 3.3, within the AIDRES PE range 0.49-0.52 GJ/t) and 0.29 GJ natural gas.
+         One ton of olefin per ton of plastic is an assumption.
 
         Returns:
             Attribute: The conversion factor of polymerisation.
