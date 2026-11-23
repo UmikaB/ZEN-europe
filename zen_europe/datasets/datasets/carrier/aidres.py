@@ -251,7 +251,7 @@ class Aidres(Dataset[dict[str, pd.DataFrame]]):
         Returns:
             Attribute: The conversion factor of polymerisation.
         """
-        electricity = 0.49 / (Constants.GJ_PER_MWH * 1000)  # GWh/t, Table 34
+        electricity = 0.518 / (Constants.GJ_PER_MWH * 1000)  # GWh/t, = 0.144 MWh/t (thesis Table 3.3, AIDRES PE range 0.49-0.52 GJ/t)
         heat = 0.29 / (Constants.GJ_PER_MWH * 1000)  # GWh/t, Table 34 (natural gas)
         attr = element.conversion_factor
         attr.set_data(
